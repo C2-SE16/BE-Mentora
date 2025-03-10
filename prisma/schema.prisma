@@ -1,0 +1,280 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model tbl_cart {
+  cartId         String           @id @db.Uuid
+  userId         String?          @db.Uuid
+  createdAt      DateTime?        @db.Timestamp(6)
+  updatedAt      DateTime?        @db.Timestamp(6)
+  tbl_users      tbl_users?       @relation(fields: [userId], references: [userId], onDelete: NoAction, onUpdate: NoAction)
+  tbl_cart_items tbl_cart_items[]
+}
+
+model tbl_cart_items {
+  cartItemId       String       @id @db.Uuid
+  courseId         String?      @db.Uuid
+  cartId           String?      @db.Uuid
+  price            Decimal?     @db.Decimal
+  discount         Float?
+  appliedVoucherId String?      @db.Uuid
+  finalPrice       Decimal?     @db.Decimal
+  tbl_cart         tbl_cart?    @relation(fields: [cartId], references: [cartId], onDelete: NoAction, onUpdate: NoAction)
+  tbl_courses      tbl_courses? @relation(fields: [courseId], references: [courseId], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model tbl_categories {
+  categoryId            String                  @id @db.Uuid
+  categoryType          category_enum?
+  tbl_course_categories tbl_course_categories[]
+}
+
+model tbl_course_categories {
+  courseCategoryId String          @id @db.Uuid
+  categoryId       String?         @db.Uuid
+  courseId         String?         @db.Uuid
+  tbl_categories   tbl_categories? @relation(fields: [categoryId], references: [categoryId], onDelete: NoAction, onUpdate: NoAction)
+  tbl_courses      tbl_courses?    @relation(fields: [courseId], references: [courseId], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model tbl_course_enrollments {
+  courseEnrollmentId String       @id @db.Uuid
+  courseId           String?      @db.Uuid
+  enrolledAt         DateTime?    @db.Timestamp(6)
+  userId             String?      @db.Uuid
+  tbl_courses        tbl_courses? @relation(fields: [courseId], references: [courseId], onDelete: NoAction, onUpdate: NoAction)
+  tbl_users          tbl_users?   @relation(fields: [userId], references: [userId], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model tbl_course_reviews {
+  reviewId    String       @id @db.Uuid
+  courseId    String?      @db.Uuid
+  userId      String?      @db.Uuid
+  rating      Decimal      @db.Decimal
+  comment     String?
+  createdAt   DateTime?    @db.Timestamp(6)
+  updatedAt   DateTime?    @db.Timestamp(6)
+  tbl_courses tbl_courses? @relation(fields: [courseId], references: [courseId], onDelete: NoAction, onUpdate: NoAction)
+  tbl_users   tbl_users?   @relation(fields: [userId], references: [userId], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model tbl_courses {
+  courseId               String                   @id @db.Uuid
+  instructorId           String?                  @db.Uuid
+  title                  String?                  @db.VarChar
+  description            String?
+  overview               String?
+  durationTime           Int?
+  price                  Decimal?                 @db.Decimal
+  approved               approve_enum?
+  rating                 Decimal?                 @db.Decimal
+  comment                String?
+  createdAt              DateTime?                @db.Timestamp(6)
+  updatedAt              DateTime?                @db.Timestamp(6)
+  tbl_cart_items         tbl_cart_items[]
+  tbl_course_categories  tbl_course_categories[]
+  tbl_course_enrollments tbl_course_enrollments[]
+  tbl_course_reviews     tbl_course_reviews[]
+  tbl_instructors        tbl_instructors?         @relation(fields: [instructorId], references: [instructorId], onDelete: NoAction, onUpdate: NoAction)
+  tbl_favorites          tbl_favorites[]
+  tbl_modules            tbl_modules[]
+  tbl_order_details      tbl_order_details[]
+  tbl_voucher_courses    tbl_voucher_courses[]
+}
+
+model tbl_favorites {
+  favoriteId  String       @id @db.Uuid
+  userId      String?      @db.Uuid
+  courseId    String?      @db.Uuid
+  tbl_courses tbl_courses? @relation(fields: [courseId], references: [courseId], onDelete: NoAction, onUpdate: NoAction)
+  tbl_users   tbl_users?   @relation(fields: [userId], references: [userId], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model tbl_instructors {
+  instructorId   String        @id @db.Uuid
+  userId         String?       @db.Uuid
+  bio            String?
+  profilePicture String?       @db.VarChar
+  experience     String?
+  average_rating Decimal?      @db.Decimal
+  isVerified     Boolean?
+  createdAt      DateTime?     @db.Timestamp(6)
+  updatedAt      DateTime?     @db.Timestamp(6)
+  tbl_courses    tbl_courses[]
+  tbl_users      tbl_users?    @relation(fields: [userId], references: [userId], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model tbl_lesson_progess {
+  lessonProgressId   String                @id @db.Uuid
+  userId             String?               @db.Uuid
+  lessonId           String?               @db.Uuid
+  status             lesson_progress_enum?
+  progressPercentage Int?                  @default(0)
+  lastWatchPosition  Int?                  @default(0)
+  completedAt        DateTime?             @db.Timestamp(6)
+  tbl_lessons        tbl_lessons?          @relation(fields: [lessonId], references: [lessonId], onDelete: NoAction, onUpdate: NoAction)
+  tbl_users          tbl_users?            @relation(fields: [userId], references: [userId], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model tbl_lessons {
+  lessonId           String               @id @db.Uuid
+  moduleId           String?              @db.Uuid
+  title              String?              @db.VarChar
+  contentType        lesson_enum
+  contentUrl         String?              @db.VarChar(255)
+  duration           Int?
+  orderIndex         Int
+  description        String?
+  isFree             Boolean?
+  createdAt          DateTime?            @db.Timestamp(6)
+  updatedAt          DateTime?            @db.Timestamp(6)
+  tbl_lesson_progess tbl_lesson_progess[]
+  tbl_modules        tbl_modules?         @relation(fields: [moduleId], references: [moduleId], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model tbl_modules {
+  moduleId    String        @id @db.Uuid
+  courseId    String?       @db.Uuid
+  title       String?       @db.VarChar
+  orderIndex  Int
+  description String?
+  createdAt   DateTime?     @db.Timestamp(6)
+  updatedAt   DateTime?     @db.Timestamp(6)
+  tbl_lessons tbl_lessons[]
+  tbl_courses tbl_courses?  @relation(fields: [courseId], references: [courseId], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model tbl_order_details {
+  orderDetailId             String                      @id @db.Uuid
+  paymentId                 String?                     @db.Uuid
+  courseId                  String?                     @db.Uuid
+  price                     Decimal?                    @db.Decimal
+  discount                  Float?
+  finalPrice                Decimal?                    @db.Decimal
+  createdAt                 DateTime?                   @db.Timestamp(6)
+  tbl_courses               tbl_courses?                @relation(fields: [courseId], references: [courseId], onDelete: NoAction, onUpdate: NoAction)
+  tbl_payment               tbl_payment?                @relation(fields: [paymentId], references: [paymentId], onDelete: NoAction, onUpdate: NoAction)
+  tbl_voucher_usage_history tbl_voucher_usage_history[]
+}
+
+model tbl_payment {
+  paymentId         String              @id @db.Uuid
+  userId            String?             @db.Uuid
+  amount            Decimal?            @db.Decimal
+  paymentMethod     String?             @db.VarChar
+  status            payment_enum?
+  transactionId     String?             @db.VarChar
+  createdAt         DateTime?           @db.Timestamp(6)
+  updatedAt         DateTime?           @db.Timestamp(6)
+  tbl_order_details tbl_order_details[]
+  tbl_users         tbl_users?          @relation(fields: [userId], references: [userId], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model tbl_users {
+  userId                    String                      @id @db.Uuid
+  email                     String?                     @db.VarChar
+  password                  String?                     @db.VarChar
+  firstName                 String?                     @db.VarChar
+  lastName                  String?                     @db.VarChar
+  avatar                    String?
+  role                      role_enum?
+  createdAt                 DateTime?                   @db.Timestamp(6)
+  updatedAt                 DateTime?                   @db.Timestamp(6)
+  tbl_cart                  tbl_cart[]
+  tbl_course_enrollments    tbl_course_enrollments[]
+  tbl_course_reviews        tbl_course_reviews[]
+  tbl_favorites             tbl_favorites[]
+  tbl_instructors           tbl_instructors[]
+  tbl_lesson_progess        tbl_lesson_progess[]
+  tbl_payment               tbl_payment[]
+  tbl_voucher_usage_history tbl_voucher_usage_history[]
+}
+
+model tbl_voucher_courses {
+  voucherCourseId String        @id @db.Uuid
+  voucherId       String?       @db.Uuid
+  courseId        String?       @db.Uuid
+  createdAt       DateTime?     @db.Timestamp(6)
+  tbl_courses     tbl_courses?  @relation(fields: [courseId], references: [courseId], onDelete: NoAction, onUpdate: NoAction)
+  tbl_vouchers    tbl_vouchers? @relation(fields: [voucherId], references: [voucherId], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model tbl_voucher_usage_history {
+  usageId           String             @id @db.Uuid
+  voucherId         String?            @db.Uuid
+  userId            String?            @db.Uuid
+  orderId           String?            @db.Uuid
+  usedAt            DateTime?          @db.Timestamp(6)
+  discountAmount    Decimal?           @db.Decimal
+  tbl_order_details tbl_order_details? @relation(fields: [orderId], references: [orderDetailId], onDelete: NoAction, onUpdate: NoAction)
+  tbl_users         tbl_users?         @relation(fields: [userId], references: [userId], onDelete: NoAction, onUpdate: NoAction)
+  tbl_vouchers      tbl_vouchers?      @relation(fields: [voucherId], references: [voucherId], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model tbl_vouchers {
+  voucherId                 String                      @id @db.Uuid
+  code                      String?                     @unique @db.VarChar
+  description               String?
+  scope                     voucher_scope_enum?
+  discountType              String?                     @default("Percentage") @db.VarChar
+  discountValue             Decimal?                    @db.Decimal
+  maxDiscount               Decimal?                    @db.Decimal
+  startDate                 DateTime?                   @db.Timestamp(6)
+  endDate                   DateTime?                   @db.Timestamp(6)
+  maxUsage                  Int?
+  isActive                  Boolean?
+  createdAt                 DateTime?                   @db.Timestamp(6)
+  updatedAt                 DateTime?                   @db.Timestamp(6)
+  tbl_voucher_courses       tbl_voucher_courses[]
+  tbl_voucher_usage_history tbl_voucher_usage_history[]
+}
+
+enum approve_enum {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum category_enum {
+  INFORMATION_TECHNOLOGY
+  MARKETING
+  FINANCE
+  BUSSINESS
+}
+
+enum lesson_enum {
+  VIDEO
+  ARTICLE
+  QUIZ
+}
+
+enum lesson_progress_enum {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum payment_enum {
+  COMPLETED
+  PENDING
+  FAILED
+}
+
+enum role_enum {
+  ADMIN
+  STUDENT
+  INSTRUCTOR
+  SUPPORT_STAFF
+  ANONYMOUS
+}
+
+enum voucher_scope_enum {
+  ALL_COURSES
+  SPECIFIC_COURSES
+  CATEGORY
+}
