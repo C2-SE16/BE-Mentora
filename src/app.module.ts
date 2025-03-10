@@ -2,6 +2,7 @@ import { ClassSerializerInterceptor, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './common/prisma/prisma.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
+import { CourseModule } from './common/modules/course.module';
 
 @Module({
   imports: [
@@ -9,6 +10,7 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
       isGlobal: true,
     }),
     PrismaModule,
+    CourseModule,
   ],
   controllers: [],
   providers: [
