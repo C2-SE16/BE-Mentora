@@ -27,4 +27,9 @@ export class CourseController {
   deleteCourse(@Param('courseId') courseId: string) {
     return this.courseService.deleteCourse(courseId);
   }
+
+  @Get('/detail/:courseId')
+  getCourseDetail(@Param('courseId') courseId: string) {
+    return this.courseService.getCourseWithDetails(courseId);
+  }
 }

@@ -59,4 +59,24 @@ export class CourseService {
       },
     });
   }
+
+  getCourseWithDetails(courseId: string) {
+    const course = this.prismaService.tbl_courses.findUnique({
+      where: { courseId: courseId },
+      include: {
+        tbl_course_reviews: true,
+        tbl_modules: {
+          include: {
+            tbl_lessons: {
+              include: {
+                tbl_lesson_progess: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return course;
+  }
 }
