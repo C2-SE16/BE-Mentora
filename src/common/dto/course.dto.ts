@@ -4,7 +4,7 @@ import { Type } from 'class-transformer';
 export class CreateCourseDto {
   @IsNotEmpty()
   @IsString()
-  @MaxLength(255)
+  @MaxLength(250)
   title: string;
 
   @IsNotEmpty()
