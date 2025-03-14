@@ -1,6 +1,9 @@
-import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
 import { CourseService } from '../services/course.service';
 import { CreateCourseDto } from '../dto/course.dto';
+import { SearchCourseDto } from '../dto/search-course.dto';
+// import { SearchCourseDto } from '../dto/search-course.dto';
+
 
 @Controller('courses')
 export class CourseController {
@@ -26,5 +29,9 @@ export class CourseController {
   @Delete('/:courseId')
   deleteCourse(@Param('courseId') courseId: string) {
     return this.courseService.deleteCourse(courseId);
+  }
+  @Get('search')
+  searchCourses(@Query() searchCourseDto: SearchCourseDto) {
+    return this.courseService.searchCourses(searchCourseDto);
   }
 }

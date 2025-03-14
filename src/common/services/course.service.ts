@@ -2,10 +2,152 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCourseDto } from '../dto/course.dto';
 import { v4 as uuidv4 } from 'uuid';
+import { Prisma } from '@prisma/client';
+// import { SearchCourseDto } from '../dto/search-course.dto';
+import { Decimal } from '@prisma/client/runtime/library'; // Nếu bạn dùng Prisma
+interface SearchCourseParams {
+  query?: string;
+  page?: number;
+  limit?: number;
+  minRating?: number;
+  categoryId?: string;
+  sortBy?: string;
+  sortOrder?: string;
+  minPrice?: number;
+  maxPrice?: number;
+}
 
 @Injectable()
 export class CourseService {
   constructor(private readonly prismaService: PrismaService) {}
+
+  async searchCourses(params: SearchCourseParams) {
+    const {
+      query,
+      page = 1,
+      limit = 10,
+      minRating,
+      categoryId,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      minPrice,
+      maxPrice,
+    } = params;
+
+    const skip = (page - 1) * limit;
+
+    // Sử dụng Prisma.Sql để tạo truy vấn
+    // let whereConditions = Prisma.empty;
+
+    // Xây dựng điều kiện tìm kiếm
+    const whereClause: Prisma.tbl_coursesWhereInput = {};
+
+    if (query) {
+      whereClause.OR = [
+        { title: { contains: query, mode: 'insensitive' } },
+        { description: { contains: query, mode: 'insensitive' } },
+      ];
+    }
+
+    if (minRating) {
+      whereClause.rating = { gte: minRating };
+    }
+
+    if (categoryId) {
+      whereClause.tbl_course_categories = {
+        some: { categoryId },
+      };
+    }
+
+    if (minPrice !== undefined || maxPrice !== undefined) {
+      whereClause.price = {};
+
+      if (minPrice !== undefined) {
+        whereClause.price.gte = minPrice;
+      }
+
+      if (maxPrice !== undefined) {
+        whereClause.price.lte = maxPrice;
+      }
+    }
+
+    // Đếm tổng số kết quả
+    const totalCount = await this.prismaService.tbl_courses.count({
+      where: whereClause,
+    });
+
+    // Lấy danh sách khóa học
+    const courses = await this.prismaService.tbl_courses.findMany({
+      where: whereClause,
+      skip,
+      take: limit,
+      orderBy: {
+        [sortBy]: sortOrder.toLowerCase(),
+      },
+      include: {
+        // Include all fields from tbl_instructors instead of selecting specific ones
+        tbl_instructors: true,
+        tbl_course_reviews: {
+          select: {
+            rating: true,
+          },
+        },
+        tbl_course_categories: {
+          include: {
+            tbl_categories: true,
+          },
+        },
+      },
+    });
+
+    // Format the response
+    const formattedCourses = courses.map((course) => {
+      const reviews = course.tbl_course_reviews || [];
+      const totalRating = reviews.reduce(
+        (sum, review) =>
+          sum +
+          (review.rating instanceof Decimal
+            ? review.rating.toNumber()
+            : review.rating || 0),
+        0,
+      );
+      const averageRating =
+        reviews.length > 0 ? totalRating / reviews.length : course.rating || 0;
+
+      // Use a more generic approach to get instructor name
+      const instructor = course.tbl_instructors
+        ? course.tbl_instructors.userId || 'Unknown Instructor'
+        : 'Unknown Instructor';
+
+      return {
+        id: course.courseId,
+        title: course.title,
+        description: course.description,
+        price: course.price,
+        discountPrice: course.price,
+        thumbnail: course.title,
+        instructor,
+        instructorAvatar: course.tbl_instructors?.profilePicture,
+        rating: averageRating,
+        ratingCount: reviews.length,
+        categories: course.tbl_course_categories.map((cc) => ({
+          id: cc.tbl_categories?.categoryId,
+          name: cc.tbl_categories?.categoryType,
+        })),
+      };
+    });
+
+    return {
+      courses: formattedCourses,
+      pagination: {
+        total: totalCount,
+        page,
+        limit,
+        totalPages: Math.ceil(totalCount / limit),
+      },
+    };
+  }
+
   createCourse(body: CreateCourseDto) {
     return this.prismaService.tbl_courses.create({
       data: {
