@@ -119,8 +119,8 @@ export class CourseService {
     }
   }
 
-  getCourseWithDetails(courseId: string) {
-    const course = this.prismaService.tbl_courses.findUnique({
+  async getCourseWithDetails(courseId: string) {
+    const course = await this.prismaService.tbl_courses.findUnique({
       where: { courseId: courseId },
       include: {
         tbl_course_reviews: true,
@@ -136,6 +136,45 @@ export class CourseService {
       },
     });
 
-    return course;
+    if (!course) return null;
+
+    return {
+      courseId: course.courseId,
+      instructorId: course.instructorId,
+      title: course.title,
+      description: course.description,
+      overview: course.overview,
+      durationTime: course.durationTime,
+      price: course.price ? Number(course.price) : 0,
+      approved: course.approved,
+      rating: course.rating ? Number(course.rating) : 0,
+      comment: course.comment,
+      createdAt: course.createdAt,
+      updatedAt: course.updatedAt,
+      reviews: course.tbl_course_reviews,
+      modules: course.tbl_modules.map((module) => ({
+        moduleId: module.moduleId,
+        courseId: module.courseId,
+        title: module.title,
+        orderIndex: module.orderIndex,
+        description: module.description,
+        createdAt: module.createdAt,
+        updatedAt: module.updatedAt,
+        lessons: module.tbl_lessons.map((lesson) => ({
+          lessonId: lesson.lessonId,
+          moduleId: lesson.moduleId,
+          title: lesson.title,
+          contentType: lesson.contentType,
+          contentUrl: lesson.contentUrl,
+          duration: lesson.duration,
+          orderIndex: lesson.orderIndex,
+          description: lesson.description,
+          isFree: lesson.isFree,
+          createdAt: lesson.createdAt,
+          updatedAt: lesson.updatedAt,
+          progress: lesson.tbl_lesson_progess,
+        })),
+      })),
+    };
   }
 }

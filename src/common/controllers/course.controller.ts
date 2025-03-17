@@ -1,4 +1,13 @@
-import { Body, Controller, Delete, Get, Param, Post, HttpException, HttpStatus } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { CourseService } from '../services/course.service';
 import { CreateCourseDto } from '../dto/course.dto';
 import { CreateSimpleCourseDto } from '../dto/create-course.dto';
@@ -14,23 +23,30 @@ export class CourseController {
   @Post('create-simple')
   async createSimpleCourse(@Body() createCourseDto: CreateSimpleCourseDto) {
     try {
-      const course = await this.courseService.createSimpleCourse(createCourseDto);
+      const course =
+        await this.courseService.createSimpleCourse(createCourseDto);
       return {
         success: true,
         data: course,
         message: 'Course created successfully',
       };
     } catch (error) {
-      throw new HttpException({
-        success: false,
-        message: 'Failed to create course',
-        error: error.message,
-      }, HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        {
+          success: false,
+          message: 'Failed to create course',
+          error: error.message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
   @Post('/:courseId')
-  updateCourse(@Param('courseId') courseId: string, @Body() body: CreateCourseDto) {
+  updateCourse(
+    @Param('courseId') courseId: string,
+    @Body() body: CreateCourseDto,
+  ) {
     return this.courseService.updateCourse(courseId, body);
   }
 
@@ -46,6 +62,7 @@ export class CourseController {
 
   @Get('/detail/:courseId')
   getCourseDetail(@Param('courseId') courseId: string) {
+    console.log('controller get detail');
     return this.courseService.getCourseWithDetails(courseId);
   }
 }
