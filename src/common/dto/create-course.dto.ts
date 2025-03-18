@@ -8,4 +8,4 @@ export class CreateSimpleCourseDto {
   @IsOptional()
   @IsUUID()
   categoryId?: string;
-} 
+}

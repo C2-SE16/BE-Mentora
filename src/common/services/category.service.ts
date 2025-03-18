@@ -53,12 +53,15 @@ export class CategoryService {
           tbl_courses: true,
         },
       });
-      
+
       // Trả về danh sách các khóa học
-      return coursesInCategory.map(item => item.tbl_courses);
+      return coursesInCategory.map((item) => item.tbl_courses);
     } catch (error) {
-      console.error(`Error fetching courses for category ${categoryId}:`, error);
+      console.error(
+        `Error fetching courses for category ${categoryId}:`,
+        error,
+      );
       throw error;
     }
   }
-} 
+}

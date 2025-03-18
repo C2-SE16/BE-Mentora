@@ -132,6 +132,94 @@ export class CourseService {
       throw error;
     }
   }
+
+  async getCourseWithDetails(courseId: string) {
+    const course = await this.prismaService.tbl_courses.findUnique({
+      where: { courseId: courseId },
+      include: {
+        tbl_course_reviews: true,
+        tbl_course_learning_objectives: true,
+        tbl_course_requirements: true,
+        tbl_course_target_audience: true,
+        tbl_modules: {
+          include: {
+            tbl_lessons: {
+              include: {
+                tbl_lesson_progess: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!course) return null;
+
+    return {
+      courseId: course.courseId,
+      instructorId: course.instructorId,
+      title: course.title,
+      description: course.description,
+      overview: course.overview,
+      durationTime: course.durationTime,
+      price: course.price ? Number(course.price) : 0,
+      approved: course.approved,
+      rating: course.rating ? Number(course.rating) : 0,
+      comment: course.comment,
+      createdAt: course.createdAt,
+      updatedAt: course.updatedAt,
+      reviews: course.tbl_course_reviews,
+      learningObjectives: course.tbl_course_learning_objectives.map(
+        (objective) => ({
+          objectiveId: objective.objectiveId,
+          courseId: objective.courseId,
+          description: objective.description,
+          orderIndex: objective.orderIndex,
+          createdAt: objective.createdAt,
+          updatedAt: objective.updatedAt,
+        }),
+      ),
+
+      requirements: course.tbl_course_requirements.map((requirement) => ({
+        requirementId: requirement.requirementId,
+        courseId: requirement.courseId,
+        description: requirement.description,
+        orderIndex: requirement.orderIndex,
+        createdAt: requirement.createdAt,
+        updatedAt: requirement.updatedAt,
+      })),
+
+      targetAudience: course.tbl_course_target_audience.map((audience) => ({
+        audienceId: audience.audienceId,
+        courseId: audience.courseId,
+        description: audience.description,
+        orderIndex: audience.orderIndex,
+        createdAt: audience.createdAt,
+        updatedAt: audience.updatedAt,
+      })),
+      modules: course.tbl_modules.map((module) => ({
+        moduleId: module.moduleId,
+        courseId: module.courseId,
+        title: module.title,
+        orderIndex: module.orderIndex,
+        description: module.description,
+        createdAt: module.createdAt,
+        updatedAt: module.updatedAt,
+        lessons: module.tbl_lessons.map((lesson) => ({
+          lessonId: lesson.lessonId,
+          moduleId: lesson.moduleId,
+          title: lesson.title,
+          contentType: lesson.contentType,
+          contentUrl: lesson.contentUrl,
+          duration: lesson.duration,
+          orderIndex: lesson.orderIndex,
+          description: lesson.description,
+          isFree: lesson.isFree,
+          createdAt: lesson.createdAt,
+          updatedAt: lesson.updatedAt,
+          progress: lesson.tbl_lesson_progess,
+        })),
+      })),
   async searchCourses(params: SearchCourseParams) {
     const {
       query,
