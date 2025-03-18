@@ -46,14 +46,17 @@ export class CourseController {
   async getCourseById(@Param('courseId') courseId: string) {
     try {
       const course = await this.courseService.getCourseById(courseId);
-      
+
       if (!course) {
-        throw new HttpException({
-          success: false,
-          message: 'Course not found',
-        }, HttpStatus.NOT_FOUND);
+        throw new HttpException(
+          {
+            success: false,
+            message: 'Course not found',
+          },
+          HttpStatus.NOT_FOUND,
+        );
       }
-      
+
       return {
         success: true,
         data: course,
@@ -63,12 +66,15 @@ export class CourseController {
       if (error.status === HttpStatus.NOT_FOUND) {
         throw error;
       }
-      
-      throw new HttpException({
-        success: false,
-        message: 'Failed to retrieve course',
-        error: error.message,
-      }, HttpStatus.INTERNAL_SERVER_ERROR);
+
+      throw new HttpException(
+        {
+          success: false,
+          message: 'Failed to retrieve course',
+          error: error.message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 

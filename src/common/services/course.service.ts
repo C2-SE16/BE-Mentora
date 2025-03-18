@@ -126,6 +126,9 @@ export class CourseService {
       where: { courseId: courseId },
       include: {
         tbl_course_reviews: true,
+        tbl_course_learning_objectives: true,
+        tbl_course_requirements: true,
+        tbl_course_target_audience: true,
         tbl_modules: {
           include: {
             tbl_lessons: {
@@ -154,6 +157,34 @@ export class CourseService {
       createdAt: course.createdAt,
       updatedAt: course.updatedAt,
       reviews: course.tbl_course_reviews,
+      learningObjectives: course.tbl_course_learning_objectives.map(
+        (objective) => ({
+          objectiveId: objective.objectiveId,
+          courseId: objective.courseId,
+          description: objective.description,
+          orderIndex: objective.orderIndex,
+          createdAt: objective.createdAt,
+          updatedAt: objective.updatedAt,
+        }),
+      ),
+
+      requirements: course.tbl_course_requirements.map((requirement) => ({
+        requirementId: requirement.requirementId,
+        courseId: requirement.courseId,
+        description: requirement.description,
+        orderIndex: requirement.orderIndex,
+        createdAt: requirement.createdAt,
+        updatedAt: requirement.updatedAt,
+      })),
+
+      targetAudience: course.tbl_course_target_audience.map((audience) => ({
+        audienceId: audience.audienceId,
+        courseId: audience.courseId,
+        description: audience.description,
+        orderIndex: audience.orderIndex,
+        createdAt: audience.createdAt,
+        updatedAt: audience.updatedAt,
+      })),
       modules: course.tbl_modules.map((module) => ({
         moduleId: module.moduleId,
         courseId: module.courseId,
