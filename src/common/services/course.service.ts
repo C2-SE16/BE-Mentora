@@ -36,9 +36,6 @@ export class CourseService {
 
     const skip = (page - 1) * limit;
 
-    // Sử dụng Prisma.Sql để tạo truy vấn
-    // let whereConditions = Prisma.empty;
-
     // Xây dựng điều kiện tìm kiếm
     const whereClause: Prisma.tbl_coursesWhereInput = {};
 
@@ -85,7 +82,6 @@ export class CourseService {
         [sortBy]: sortOrder.toLowerCase(),
       },
       include: {
-        // Include all fields from tbl_instructors instead of selecting specific ones
         tbl_instructors: true,
         tbl_course_reviews: {
           select: {
@@ -114,7 +110,7 @@ export class CourseService {
       const averageRating =
         reviews.length > 0 ? totalRating / reviews.length : course.rating || 0;
 
-      // Use a more generic approach to get instructor name
+      // Get instructor name
       const instructor = course.tbl_instructors
         ? course.tbl_instructors.userId || 'Unknown Instructor'
         : 'Unknown Instructor';
@@ -123,11 +119,12 @@ export class CourseService {
         id: course.courseId,
         title: course.title,
         description: course.description,
-        price: course.price,
-        discountPrice: course.price,
-        thumbnail: course.title,
+        price: course.price instanceof Decimal ? course.price.toNumber() : course.price,
+        discountPrice: course.price instanceof Decimal ? course.price.toNumber() : course.price,
+        // Use a default thumbnail path since the property doesn't exist
+        thumbnail: `/courses/${course.courseId}.jpg`,
         instructor,
-        instructorAvatar: course.tbl_instructors?.profilePicture,
+        instructorAvatar: course.tbl_instructors?.profilePicture || '/avatars/default.jpg',
         rating: averageRating,
         ratingCount: reviews.length,
         categories: course.tbl_course_categories.map((cc) => ({
