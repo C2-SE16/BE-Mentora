@@ -5,14 +5,14 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  
+
   // Bật CORS để cho phép truy cập từ bên ngoài
   app.enableCors({
     origin: true, // Cho phép tất cả các origin, trong môi trường production nên giới hạn cụ thể
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
-  
+
   app.useGlobalInterceptors(new TransformInterceptor());
   const port = process.env.PORT || 9090;
   app.useGlobalPipes(
