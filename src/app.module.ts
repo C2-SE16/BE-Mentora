@@ -4,6 +4,7 @@ import { PrismaModule } from './common/prisma/prisma.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { CourseModule } from './common/modules/course.module';
 import { CategoryModule } from './common/modules/category.module';
+import { UploadModule } from 'src/common/modules/upload.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { CategoryModule } from './common/modules/category.module';
     PrismaModule,
     CourseModule,
     CategoryModule,
+    UploadModule,
   ],
   controllers: [],
   providers: [
