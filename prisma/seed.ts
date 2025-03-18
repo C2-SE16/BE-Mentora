@@ -162,6 +162,94 @@ async function main() {
     },
   });
 
+  await prisma.tbl_course_learning_objectives.createMany({
+    data: [
+      {
+        objectiveId: uuidv4(),
+        courseId: course1.courseId,
+        description: 'Understand the basics of HTML, CSS, and JavaScript',
+        orderIndex: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        objectiveId: uuidv4(),
+        courseId: course1.courseId,
+        description: 'Build responsive and modern web applications',
+        orderIndex: 2,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        objectiveId: uuidv4(),
+        courseId: course1.courseId,
+        description:
+          'Develop skills to work with front-end and back-end technologies',
+        orderIndex: 3,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ],
+  });
+
+  await prisma.tbl_course_requirements.createMany({
+    data: [
+      {
+        requirementId: uuidv4(),
+        courseId: course1.courseId,
+        description: 'Basic understanding of how to use a computer',
+        orderIndex: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        requirementId: uuidv4(),
+        courseId: course1.courseId,
+        description: 'A stable internet connection',
+        orderIndex: 2,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        requirementId: uuidv4(),
+        courseId: course1.courseId,
+        description: 'No prior programming knowledge required',
+        orderIndex: 3,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ],
+  });
+
+  await prisma.tbl_course_target_audience.createMany({
+    data: [
+      {
+        audienceId: uuidv4(),
+        courseId: course1.courseId,
+        description: 'Beginners who want to learn web development',
+        orderIndex: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        audienceId: uuidv4(),
+        courseId: course1.courseId,
+        description: 'Aspiring front-end or full-stack developers',
+        orderIndex: 2,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        audienceId: uuidv4(),
+        courseId: course1.courseId,
+        description: 'Entrepreneurs who want to build their own websites',
+        orderIndex: 3,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ],
+  });
+
   console.log('Seeding completed!');
 }
 
