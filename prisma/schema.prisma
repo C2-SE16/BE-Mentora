@@ -85,6 +85,9 @@ model tbl_courses {
   tbl_modules            tbl_modules[]
   tbl_order_details      tbl_order_details[]
   tbl_voucher_courses    tbl_voucher_courses[]
+  tbl_course_learning_objectives tbl_course_learning_objectives[]
+  tbl_course_requirements        tbl_course_requirements[]
+  tbl_course_target_audience     tbl_course_target_audience[]
 }
 
 model tbl_favorites {
@@ -232,6 +235,36 @@ model tbl_vouchers {
   updatedAt                 DateTime?                   @db.Timestamp(6)
   tbl_voucher_courses       tbl_voucher_courses[]
   tbl_voucher_usage_history tbl_voucher_usage_history[]
+}
+
+model tbl_course_learning_objectives {
+  objectiveId   String       @id @db.Uuid
+  courseId      String?      @db.Uuid
+  description   String
+  orderIndex    Int
+  createdAt     DateTime?    @db.Timestamp(6)
+  updatedAt     DateTime?    @db.Timestamp(6)
+  tbl_courses   tbl_courses? @relation(fields: [courseId], references: [courseId], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model tbl_course_requirements {
+  requirementId String       @id @db.Uuid
+  courseId      String?      @db.Uuid
+  description   String
+  orderIndex    Int
+  createdAt     DateTime?    @db.Timestamp(6)
+  updatedAt     DateTime?    @db.Timestamp(6)
+  tbl_courses   tbl_courses? @relation(fields: [courseId], references: [courseId], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model tbl_course_target_audience {
+  audienceId    String       @id @db.Uuid
+  courseId      String?      @db.Uuid
+  description   String
+  orderIndex    Int
+  createdAt     DateTime?    @db.Timestamp(6)
+  updatedAt     DateTime?    @db.Timestamp(6)
+  tbl_courses   tbl_courses? @relation(fields: [courseId], references: [courseId], onDelete: NoAction, onUpdate: NoAction)
 }
 
 enum approve_enum {
