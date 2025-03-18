@@ -1,10 +1,17 @@
-
-
-import { Body, Controller, Delete, Get, Param, Post, Query, HttpException, HttpStatus } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Query,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { CourseService } from '../services/course.service';
 import { CreateCourseDto } from '../dto/course.dto';
 import { CreateSimpleCourseDto } from '../dto/create-course.dto';
-
 
 @Controller('courses')
 export class CourseController {
@@ -113,7 +120,7 @@ export class CourseController {
   deleteCourse(@Param('courseId') courseId: string) {
     return this.courseService.deleteCourse(courseId);
   }
-@Get('/detail/:courseId')
+  @Get('/detail/:courseId')
   getCourseDetail(@Param('courseId') courseId: string) {
     console.log('controller get detail');
     return this.courseService.getCourseWithDetails(courseId);

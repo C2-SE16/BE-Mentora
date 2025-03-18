@@ -220,6 +220,8 @@ export class CourseService {
           progress: lesson.tbl_lesson_progess,
         })),
       })),
+    };
+  }
   async searchCourses(params: SearchCourseParams) {
     const {
       query,
