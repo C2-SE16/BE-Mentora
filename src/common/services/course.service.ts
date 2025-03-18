@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCourseDto } from '../dto/course.dto';
 import { v4 as uuidv4 } from 'uuid';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { CreateSimpleCourseDto } from '../dto/create-course.dto';
 
 const prisma = new PrismaClient();
@@ -82,8 +82,8 @@ export class CourseService {
       // Lấy một instructor từ database
       const instructor = await this.prismaService.tbl_instructors.findFirst({
         where: {
-          isVerified: true
-        }
+          isVerified: true,
+        },
       });
 
       if (!instructor) {
@@ -131,7 +131,8 @@ export class CourseService {
       console.error('Error creating course:', error);
       throw error;
     }
-      async searchCourses(params: SearchCourseParams) {
+  }
+  async searchCourses(params: SearchCourseParams) {
     const {
       query,
       page = 1,
@@ -142,12 +143,10 @@ export class CourseService {
       sortOrder = 'desc',
       minPrice,
       maxPrice,
-
     } = params;
 
     const skip = (page - 1) * limit;
 
-    
     const whereClause: Prisma.tbl_coursesWhereInput = {};
 
     if (query) {
@@ -230,12 +229,19 @@ export class CourseService {
         id: course.courseId,
         title: course.title,
         description: course.description,
-        price: course.price instanceof Decimal ? course.price.toNumber() : course.price,
-        discountPrice: course.price instanceof Decimal ? course.price.toNumber() : course.price,
+        price:
+          course.price instanceof Decimal
+            ? course.price.toNumber()
+            : course.price,
+        discountPrice:
+          course.price instanceof Decimal
+            ? course.price.toNumber()
+            : course.price,
         // Use a default thumbnail path since the property doesn't exist
         thumbnail: `/courses/${course.courseId}.jpg`,
         instructor,
-        instructorAvatar: course.tbl_instructors?.profilePicture || '/avatars/default.jpg',
+        instructorAvatar:
+          course.tbl_instructors?.profilePicture || '/avatars/default.jpg',
         rating: averageRating,
         ratingCount: reviews.length,
         categories: course.tbl_course_categories.map((cc) => ({
@@ -254,6 +260,5 @@ export class CourseService {
         totalPages: Math.ceil(totalCount / limit),
       },
     };
-  }
   }
 }
