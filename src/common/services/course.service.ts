@@ -90,14 +90,16 @@ export class CourseService {
         },
       });
 
-      // Tạo liên kết với category
-      await this.prismaService.tbl_course_categories.create({
-        data: {
-          courseCategoryId: uuidv4(),
-          courseId: newCourse.courseId,
-          categoryId: createCourseDto.categoryId,
-        },
-      });
+      // Chỉ tạo liên kết với category nếu categoryId được cung cấp
+      if (createCourseDto.categoryId) {
+        await this.prismaService.tbl_course_categories.create({
+          data: {
+            courseCategoryId: uuidv4(),
+            courseId: newCourse.courseId,
+            categoryId: createCourseDto.categoryId,
+          },
+        });
+      }
 
       // Trả về khóa học đã tạo kèm thông tin category và instructor
       return await this.prismaService.tbl_courses.findUnique({
