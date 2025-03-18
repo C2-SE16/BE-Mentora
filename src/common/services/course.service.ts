@@ -32,11 +32,12 @@ export class CourseService {
       sortOrder = 'desc',
       minPrice,
       maxPrice,
+
     } = params;
 
     const skip = (page - 1) * limit;
 
-    // Xây dựng điều kiện tìm kiếm
+    
     const whereClause: Prisma.tbl_coursesWhereInput = {};
 
     if (query) {
