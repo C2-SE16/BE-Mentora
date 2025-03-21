@@ -1,52 +1,88 @@
 import {
   Controller,
   Post,
+  Body,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
 import * as fs from 'fs';
 import * as path from 'path';
 
 @Controller('upload')
 export class UploadController {
-  @Post('video')
-  @UseInterceptors(
-    FileInterceptor('video', {
-      storage: diskStorage({
-        destination: (req, file, cb) => {
-          const uploadPath = path.join(
-            __dirname,
-            '..',
-            '..',
-            '..',
-            '..',
-            'uploads',
-            'videos',
-          );
-          console.log('Upload Path:', uploadPath);
+  private readonly tempPath = path.join(
+    __dirname,
+    '..',
+    '..',
+    '..',
+    '..',
+    'uploads',
+    'temp',
+  );
+  private readonly finalPath = path.join(
+    __dirname,
+    '..',
+    '..',
+    '..',
+    '..',
+    'uploads',
+    'videos',
+  );
 
-          // Kiểm tra nếu thư mục chưa tồn tại thì tạo mới
-          if (!fs.existsSync(uploadPath)) {
-            fs.mkdirSync(uploadPath, { recursive: true });
-          }
+  constructor() {
+    // Tạo thư mục nếu chưa tồn tại
+    if (!fs.existsSync(this.tempPath))
+      fs.mkdirSync(this.tempPath, { recursive: true });
+    if (!fs.existsSync(this.finalPath))
+      fs.mkdirSync(this.finalPath, { recursive: true });
+  }
 
-          cb(null, uploadPath);
-        },
-        filename: (req, file, cb) => {
-          const uniqueName = `${Date.now()}-${file.originalname}`;
-          cb(null, uniqueName);
-        },
-      }),
-    }),
-  )
-  uploadVideo(@UploadedFile() file: Express.Multer.File) {
-    console.log('File saved at:', file.path);
+  @Post('chunk')
+  @UseInterceptors(FileInterceptor('chunk'))
+  async uploadChunk(
+    @UploadedFile() file: Express.Multer.File,
+    @Body('chunkIndex') chunkIndex: number,
+    @Body('totalChunks') totalChunks: number,
+    @Body('fileName') fileName: string,
+  ) {
+    const chunkPath = path.join(this.tempPath, `${fileName}.part${chunkIndex}`);
+
+    // Lưu từng chunk vào thư mục tạm thời
+    fs.writeFileSync(chunkPath, file.buffer);
+
+    console.log(
+      `Received chunk ${chunkIndex + 1}/${totalChunks} for ${fileName}`,
+    );
+
+    return { message: `Chunk ${chunkIndex + 1} uploaded successfully!` };
+  }
+
+  @Post('merge')
+  async mergeChunks(
+    @Body('fileName') fileName: string,
+    @Body('totalChunks') totalChunks: number,
+  ) {
+    const finalFilePath = path.join(this.finalPath, fileName);
+    const writeStream = fs.createWriteStream(finalFilePath);
+
+    for (let i = 0; i < totalChunks; i++) {
+      const chunkPath = path.join(this.tempPath, `${fileName}.part${i}`);
+      if (!fs.existsSync(chunkPath)) {
+        return { message: `Chunk ${i} is missing!` };
+      }
+
+      const chunkData = fs.readFileSync(chunkPath);
+      writeStream.write(chunkData);
+      fs.unlinkSync(chunkPath); // Xóa chunk sau khi merge
+    }
+
+    writeStream.end();
+    console.log(`File ${fileName} merged successfully!`);
 
     return {
-      message: 'Video uploaded successfully!',
-      filePath: `/uploads/videos/${file.filename}`, // Đảm bảo frontend có thể truy cập
+      message: 'File uploaded successfully!',
+      filePath: `/uploads/videos/${fileName}`,
     };
   }
 }
