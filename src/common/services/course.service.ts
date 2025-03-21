@@ -140,6 +140,11 @@ export class CourseService {
         tbl_course_reviews: true,
         tbl_course_learning_objectives: true,
         tbl_course_requirements: true,
+        tbl_instructors: {
+          include: {
+            tbl_users: true,
+          },
+        },
         tbl_course_target_audience: true,
         tbl_modules: {
           include: {
@@ -154,7 +159,6 @@ export class CourseService {
     });
 
     if (!course) return null;
-
     return {
       courseId: course.courseId,
       instructorId: course.instructorId,
@@ -169,6 +173,33 @@ export class CourseService {
       createdAt: course.createdAt,
       updatedAt: course.updatedAt,
       reviews: course.tbl_course_reviews,
+      instructor: course.tbl_instructors
+        ? {
+            instructorId: course.tbl_instructors.instructorId,
+            userId: course.tbl_instructors.userId,
+            bio: course.tbl_instructors.bio,
+            profilePicture: course.tbl_instructors.profilePicture,
+            experience: course.tbl_instructors.experience,
+            averageRating: course.tbl_instructors.average_rating,
+            isVerified: course.tbl_instructors.isVerified,
+            createdAt: course.tbl_instructors.createdAt,
+            updatedAt: course.tbl_instructors.updatedAt,
+
+            // Thêm thông tin user liên kết với instructor
+            user: course.tbl_instructors.tbl_users
+              ? {
+                  userId: course.tbl_instructors.tbl_users.userId,
+                  email: course.tbl_instructors.tbl_users.email,
+                  firstName: course.tbl_instructors.tbl_users.firstName,
+                  lastName: course.tbl_instructors.tbl_users.lastName,
+                  avatar: course.tbl_instructors.tbl_users.avatar,
+                  role: course.tbl_instructors.tbl_users.role,
+                  createdAt: course.tbl_instructors.tbl_users.createdAt,
+                  updatedAt: course.tbl_instructors.tbl_users.updatedAt,
+                }
+              : null,
+          }
+        : null,
       learningObjectives: course.tbl_course_learning_objectives.map(
         (objective) => ({
           objectiveId: objective.objectiveId,
@@ -220,6 +251,8 @@ export class CourseService {
           progress: lesson.tbl_lesson_progess,
         })),
       })),
+    };
+  }
   async searchCourses(params: SearchCourseParams) {
     const {
       query,
