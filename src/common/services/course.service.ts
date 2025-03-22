@@ -2,10 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCourseDto } from '../dto/course.dto';
 import { v4 as uuidv4 } from 'uuid';
-import { Prisma, PrismaClient } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { CreateSimpleCourseDto } from '../dto/create-course.dto';
 
-const prisma = new PrismaClient();
+
 // import { SearchCourseDto } from '../dto/search-course.dto';
 import { Decimal } from '@prisma/client/runtime/library'; // Nếu bạn dùng Prisma
 interface SearchCourseParams {

@@ -25,7 +25,7 @@ export class CategoryController {
         {
           success: false,
           message: 'Failed to retrieve categories',
-          error: error.message,
+          error: error instanceof Error ? error.message : 'Unknown error',
         },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
@@ -38,13 +38,7 @@ export class CategoryController {
       const category = await this.categoryService.getCategoryById(categoryId);
 
       if (!category) {
-        throw new HttpException(
-          {
-            success: false,
-            message: 'Category not found',
-          },
-          HttpStatus.NOT_FOUND,
-        );
+        throw new HttpException('Category not found', HttpStatus.NOT_FOUND);
       }
 
       return {
@@ -53,15 +47,11 @@ export class CategoryController {
         message: 'Category retrieved successfully',
       };
     } catch (error) {
-      if (error.status === HttpStatus.NOT_FOUND) {
-        throw error;
-      }
-
       throw new HttpException(
         {
           success: false,
           message: 'Failed to retrieve category',
-          error: error.message,
+          error: error instanceof Error ? error.message : 'Unknown error',
         },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
@@ -71,9 +61,7 @@ export class CategoryController {
   @Get('/:categoryId/courses')
   async getCoursesByCategory(@Param('categoryId') categoryId: string) {
     try {
-      const courses =
-        await this.categoryService.getCoursesByCategory(categoryId);
-
+      const courses = await this.categoryService.getCoursesByCategory(categoryId);
       return {
         success: true,
         data: courses,
@@ -84,7 +72,7 @@ export class CategoryController {
         {
           success: false,
           message: 'Failed to retrieve courses for this category',
-          error: error.message,
+          error: error instanceof Error ? error.message : 'Unknown error',
         },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
