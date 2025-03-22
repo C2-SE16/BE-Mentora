@@ -124,20 +124,26 @@ export class CourseController {
     return this.courseService.getCourse();
   }
 
-  @Delete('/:courseId')
+  @Delete('/:courseId')    
   async deleteCourse(@Param('courseId') courseId: string) {
-    try {
-      await this.courseService.deleteCourse(courseId);
-      return {
-        success: true,
-        message: 'Course deleted successfully',
-      };
-    } catch (error: unknown) {
-      throw new HttpException({
-        success: false,
-        message: 'Failed to delete course',
-        error: (error as Error).message,
-      }, HttpStatus.INTERNAL_SERVER_ERROR);
-    }
+  try {
+    await this.courseService.deleteCourse(courseId);
+    return {
+      success: true,
+      message: 'Course deleted successfully',
+    };
+  } catch (error: unknown) {
+    throw new HttpException({
+      success: false,
+      message: 'Failed to delete course',
+      error: (error as Error).message,
+    }, HttpStatus.INTERNAL_SERVER_ERROR);
+  }
+    
+  @Get('/detail/:courseId')
+  getCourseDetail(@Param('courseId') courseId: string) {
+    console.log('controller get detail');
+    return this.courseService.getCourseWithDetails(courseId);
+  
   }
 }
