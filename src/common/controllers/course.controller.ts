@@ -1,13 +1,13 @@
-import { 
-  Body, 
-  Controller, 
-  Delete, 
-  Get, 
-  Param, 
-  Post, 
-  Query, 
-  HttpException, 
-  HttpStatus 
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Query,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { CourseService } from '../services/course.service';
 import { CreateCourseDto } from '../dto/course.dto';
@@ -50,7 +50,8 @@ export class CourseController {
   @Post('create-simple')
   async createSimpleCourse(@Body() createCourseDto: CreateSimpleCourseDto) {
     try {
-      const course = await this.courseService.createSimpleCourse(createCourseDto);
+      const course =
+        await this.courseService.createSimpleCourse(createCourseDto);
       return {
         success: true,
         data: course,
@@ -58,16 +59,22 @@ export class CourseController {
       };
     } catch (error: unknown) {
       if (error instanceof Error) {
-        throw new HttpException({
-          success: false,
-          message: 'Failed to create course',
-          error: error.message,
-        }, HttpStatus.INTERNAL_SERVER_ERROR);
+        throw new HttpException(
+          {
+            success: false,
+            message: 'Failed to create course',
+            error: error.message,
+          },
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
       }
-      throw new HttpException({
-        success: false,
-        message: 'Unknown error occurred',
-      }, HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        {
+          success: false,
+          message: 'Unknown error occurred',
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -76,10 +83,13 @@ export class CourseController {
     try {
       const course = await this.courseService.getCourseById(courseId);
       if (!course) {
-        throw new HttpException({
-          success: false,
-          message: 'Course not found',
-        }, HttpStatus.NOT_FOUND);
+        throw new HttpException(
+          {
+            success: false,
+            message: 'Course not found',
+          },
+          HttpStatus.NOT_FOUND,
+        );
       }
       return {
         success: true,
@@ -90,32 +100,41 @@ export class CourseController {
       if (error instanceof HttpException) {
         throw error;
       }
-      throw new HttpException({
-        success: false,
-        message: 'Failed to retrieve course',
-        error: (error as Error).message,
-      }, HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        {
+          success: false,
+          message: 'Failed to retrieve course',
+          error: (error as Error).message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
   @Post('/:courseId')
   async updateCourse(
-    @Param('courseId') courseId: string, 
-    @Body() body: CreateCourseDto
+    @Param('courseId') courseId: string,
+    @Body() body: CreateCourseDto,
   ) {
     try {
-      const updatedCourse = await this.courseService.updateCourse(courseId, body);
+      const updatedCourse = await this.courseService.updateCourse(
+        courseId,
+        body,
+      );
       return {
         success: true,
         data: updatedCourse,
         message: 'Course updated successfully',
       };
     } catch (error: unknown) {
-      throw new HttpException({
-        success: false,
-        message: 'Failed to update course',
-        error: (error as Error).message,
-      }, HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        {
+          success: false,
+          message: 'Failed to update course',
+          error: (error as Error).message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -124,26 +143,28 @@ export class CourseController {
     return this.courseService.getCourse();
   }
 
-  @Delete('/:courseId')    
+  @Delete('/:courseId')
   async deleteCourse(@Param('courseId') courseId: string) {
-  try {
-    await this.courseService.deleteCourse(courseId);
-    return {
-      success: true,
-      message: 'Course deleted successfully',
-    };
-  } catch (error: unknown) {
-    throw new HttpException({
-      success: false,
-      message: 'Failed to delete course',
-      error: (error as Error).message,
-    }, HttpStatus.INTERNAL_SERVER_ERROR);
+    try {
+      await this.courseService.deleteCourse(courseId);
+      return {
+        success: true,
+        message: 'Course deleted successfully',
+      };
+    } catch (error: unknown) {
+      throw new HttpException(
+        {
+          success: false,
+          message: 'Failed to delete course',
+          error: (error as Error).message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
-    
   @Get('/detail/:courseId')
   getCourseDetail(@Param('courseId') courseId: string) {
     console.log('controller get detail');
     return this.courseService.getCourseWithDetails(courseId);
-  
   }
 }
