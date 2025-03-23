@@ -8,6 +8,7 @@ import {
   Query,
   HttpException,
   HttpStatus,
+  HttpCode,
 } from '@nestjs/common';
 import { CourseService } from '../services/course.service';
 import { CreateCourseDto } from '../dto/course.dto';
@@ -72,6 +73,23 @@ export class CourseController {
         {
           success: false,
           message: 'Unknown error occurred',
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('homepage')
+  @HttpCode(HttpStatus.OK)
+  async getHomepageCourses() {
+    try {
+      return await this.courseService.getHomepageCourses();
+    } catch (error) {
+      throw new HttpException(
+        {
+          success: false,
+          message: 'Failed to get homepage courses',
+          error: (error as Error).message,
         },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );

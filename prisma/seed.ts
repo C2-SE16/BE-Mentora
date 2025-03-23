@@ -85,6 +85,10 @@ async function main() {
       rating: 4.5,
       createdAt: new Date(),
       updatedAt: new Date(),
+      thumbnail:
+        'https://plus.unsplash.com/premium_vector-1734159656195-8b0f4d6a6b73?q=80&w=2416&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+      isBestSeller: true,
+      isRecommended: true,
     },
   });
 
@@ -249,6 +253,233 @@ async function main() {
       },
     ],
   });
+
+  // Tạo thêm một số khóa học để demo
+  const additionalCourses = [
+    {
+      title: 'JavaScript Masterclass',
+      description: 'Advanced JavaScript concepts and patterns',
+      overview:
+        'Deep dive into JavaScript, covering advanced topics like closures, prototypes, and async programming',
+      durationTime: 3000, // 50 hours
+      price: 89.99,
+      thumbnail:
+        'https://plus.unsplash.com/premium_vector-1734528979745-eaa10d557eed?q=80&w=2148&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+      isBestSeller: true,
+      isRecommended: false,
+      categoryId: itCategory.categoryId,
+    },
+    {
+      title: 'Digital Marketing Fundamentals',
+      description: 'Learn the basics of digital marketing',
+      overview:
+        'Comprehensive introduction to SEO, SEM, social media marketing, and content strategy',
+      durationTime: 1800, // 30 hours
+      price: 69.99,
+      thumbnail:
+        'https://plus.unsplash.com/premium_vector-1730731379517-dd0bc0f201cf?q=80&w=2148&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+      isBestSeller: false,
+      isRecommended: true,
+      categoryId: marketingCategory.categoryId,
+    },
+    {
+      title: 'Mobile App Development with React Native',
+      description: 'Build cross-platform mobile apps',
+      overview:
+        'Learn to develop iOS and Android apps using a single codebase with React Native',
+      durationTime: 3600, // 60 hours
+      price: 109.99,
+      thumbnail:
+        'https://cdn.hashnode.com/res/hashnode/image/upload/v1681468530991/3ff30cea-325d-412e-8c2d-7e091df05b68.png?w=1600&h=840&fit=crop&crop=entropy&auto=compress,format&format=webp',
+      isBestSeller: true,
+      isRecommended: true,
+      categoryId: itCategory.categoryId,
+    },
+  ];
+
+  // Tạo các khóa học và liên kết danh mục
+  for (const courseData of additionalCourses) {
+    const { categoryId, ...courseInfo } = courseData;
+    const course = await prisma.tbl_courses.create({
+      data: {
+        courseId: uuidv4(),
+        instructorId: instructor.instructorId,
+        ...courseInfo,
+        approved: 'APPROVED',
+        rating: 4.0 + Math.random(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+
+    await prisma.tbl_course_categories.create({
+      data: {
+        courseCategoryId: uuidv4(),
+        categoryId: categoryId,
+        courseId: course.courseId,
+      },
+    });
+  }
+
+  // Tạo thêm khóa học có isRecommended: true
+  const recommendedCourses = [
+    {
+      title: 'Data Science và Machine Learning cơ bản',
+      description: 'Nhập môn về Data Science, thống kê và Machine Learning',
+      overview:
+        'Khóa học giúp bạn xây dựng nền tảng vững chắc về Data Science và AI',
+      durationTime: 4200, // 70 hours
+      price: 129.99,
+      thumbnail:
+        'https://images.unsplash.com/photo-1501504905252-473c47e087f8?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3',
+      isBestSeller: false,
+      isRecommended: true,
+      categoryId: itCategory.categoryId,
+    },
+    {
+      title: 'Phát triển ứng dụng Web với NodeJS và Express',
+      description: 'Xây dựng REST API và ứng dụng Back-end hoàn chỉnh',
+      overview:
+        'Học cách phát triển ứng dụng server-side với NodeJS, Express và MongoDB',
+      durationTime: 3600, // 60 hours
+      price: 89.99,
+      thumbnail:
+        'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3',
+      isBestSeller: false,
+      isRecommended: true,
+      categoryId: itCategory.categoryId,
+    },
+    {
+      title: 'Content Marketing chuyên nghiệp',
+      description: 'Chiến lược xây dựng nội dung thu hút khách hàng',
+      overview:
+        'Học cách tạo chiến lược content marketing hiệu quả và đo lường thành công',
+      durationTime: 2400, // 40 hours
+      price: 79.99,
+      thumbnail:
+        'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3',
+      isBestSeller: false,
+      isRecommended: true,
+      categoryId: marketingCategory.categoryId,
+    },
+    {
+      title: 'UI/UX Design: Từ cơ bản đến nâng cao',
+      description: 'Thiết kế giao diện người dùng trực quan và thân thiện',
+      overview:
+        'Khóa học giúp bạn nắm vững các nguyên tắc thiết kế UI/UX và công cụ Figma',
+      durationTime: 3000, // 50 hours
+      price: 99.99,
+      thumbnail:
+        'https://images.unsplash.com/photo-1581291518633-83b4ebd1d83e?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3',
+      isBestSeller: false,
+      isRecommended: true,
+      categoryId: itCategory.categoryId,
+    },
+  ];
+
+  // Tạo thêm khóa học có isBestSeller: true
+  const bestSellerCourses = [
+    {
+      title: 'Python cho Data Analysis và Visualization',
+      description: 'Phân tích và trực quan hóa dữ liệu với Python',
+      overview:
+        'Học cách sử dụng thư viện pandas, numpy, matplotlib và seaborn cho phân tích dữ liệu',
+      durationTime: 3300, // 55 hours
+      price: 109.99,
+      thumbnail:
+        'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?q=80&w=2069&auto=format&fit=crop&ixlib=rb-4.0.3',
+      isBestSeller: true,
+      isRecommended: false,
+      categoryId: itCategory.categoryId,
+    },
+    {
+      title: 'Digital Advertising và Facebook Ads',
+      description: 'Chiến lược quảng cáo trên nền tảng Meta hiệu quả',
+      overview:
+        'Học cách tạo và tối ưu hóa chiến dịch quảng cáo trên Facebook, Instagram và Audience Network',
+      durationTime: 1800, // 30 hours
+      price: 69.99,
+      thumbnail:
+        'https://images.unsplash.com/photo-1563986768609-322da13575f3?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3',
+      isBestSeller: true,
+      isRecommended: false,
+      categoryId: marketingCategory.categoryId,
+    },
+    {
+      title: 'Phát triển Game với Unity 3D',
+      description: 'Xây dựng game 3D từ ý tưởng đến sản phẩm hoàn chỉnh',
+      overview:
+        'Khóa học giúp bạn làm chủ Unity 3D và phát triển game cross-platform',
+      durationTime: 4500, // 75 hours
+      price: 129.99,
+      thumbnail:
+        'https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=2071&auto=format&fit=crop&ixlib=rb-4.0.3',
+      isBestSeller: true,
+      isRecommended: false,
+      categoryId: itCategory.categoryId,
+    },
+    {
+      title: 'DevOps và CI/CD Pipeline',
+      description: 'Xây dựng quy trình phát triển và triển khai liên tục',
+      overview:
+        'Học cách sử dụng Docker, Kubernetes, Jenkins và các công cụ DevOps khác',
+      durationTime: 3600, // 60 hours
+      price: 119.99,
+      thumbnail:
+        'https://images.unsplash.com/photo-1633412802994-5c058f151b66?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3',
+      isBestSeller: true,
+      isRecommended: false,
+      categoryId: itCategory.categoryId,
+    },
+  ];
+
+  // Tạo các khóa học được đề xuất
+  for (const courseData of recommendedCourses) {
+    const { categoryId, ...courseInfo } = courseData;
+    const course = await prisma.tbl_courses.create({
+      data: {
+        courseId: uuidv4(),
+        instructorId: instructor.instructorId,
+        ...courseInfo,
+        approved: 'APPROVED',
+        rating: 4.0 + Math.random(), // Random rating từ 4.0 đến 5.0
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+
+    await prisma.tbl_course_categories.create({
+      data: {
+        courseCategoryId: uuidv4(),
+        categoryId: categoryId,
+        courseId: course.courseId,
+      },
+    });
+  }
+
+  // Tạo các khóa học bán chạy nhất
+  for (const courseData of bestSellerCourses) {
+    const { categoryId, ...courseInfo } = courseData;
+    const course = await prisma.tbl_courses.create({
+      data: {
+        courseId: uuidv4(),
+        instructorId: instructor.instructorId,
+        ...courseInfo,
+        approved: 'APPROVED',
+        rating: 4.2 + Math.random() * 0.8, // Random rating từ 4.2 đến 5.0
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+
+    await prisma.tbl_course_categories.create({
+      data: {
+        courseCategoryId: uuidv4(),
+        categoryId: categoryId,
+        courseId: course.courseId,
+      },
+    });
+  }
 
   console.log('Seeding completed!');
 }
