@@ -76,6 +76,9 @@ model tbl_courses {
   comment                String?
   createdAt              DateTime?                @db.Timestamp(6)
   updatedAt              DateTime?                @db.Timestamp(6)
+  thumbnail              String?                  @db.VarChar(255)
+  isBestSeller           Boolean?                 @default(false)
+  isRecommended          Boolean?                 @default(false)
   tbl_cart_items         tbl_cart_items[]
   tbl_course_categories  tbl_course_categories[]
   tbl_course_enrollments tbl_course_enrollments[]

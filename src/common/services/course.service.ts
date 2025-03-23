@@ -5,9 +5,18 @@ import { v4 as uuidv4 } from 'uuid';
 import { Prisma } from '@prisma/client';
 import { CreateSimpleCourseDto } from '../dto/create-course.dto';
 
-
 // import { SearchCourseDto } from '../dto/search-course.dto';
 import { Decimal } from '@prisma/client/runtime/library'; // Nếu bạn dùng Prisma
+import { COURSE_APPROVE_STATUS } from '../constants/course.constant';
+import { ROLE } from '../constants/role.constant';
+import { HomepageCourse } from '../interfaces/homepage-course.interface';
+import {
+  HomepageCourseEntity,
+  HomepageCoursesResponseEntity,
+  HomepageMentorEntity,
+  HomepageTopicEntity,
+} from 'src/entities/homepage-course.entity';
+import { formatDate } from '../utils/formatDate.util';
 interface SearchCourseParams {
   query?: string;
   page?: number;
@@ -381,5 +390,171 @@ export class CourseService {
         totalPages: Math.ceil(totalCount / limit),
       },
     };
+  }
+
+  async getHomepageCourses(): Promise<HomepageCoursesResponseEntity> {
+    try {
+      const recommendedCourses = await this.prismaService.tbl_courses.findMany({
+        where: {
+          approved: COURSE_APPROVE_STATUS.APPROVED,
+          isRecommended: true,
+        },
+        take: 4,
+        include: {
+          tbl_instructors: {
+            include: {
+              tbl_users: true,
+            },
+          },
+          tbl_course_reviews: true,
+        },
+      });
+
+      const bestSellerCourses = await this.prismaService.tbl_courses.findMany({
+        where: {
+          approved: COURSE_APPROVE_STATUS.APPROVED,
+          isBestSeller: true,
+        },
+        take: 4,
+        include: {
+          tbl_instructors: {
+            include: {
+              tbl_users: true,
+            },
+          },
+          tbl_course_reviews: true,
+          tbl_course_categories: {
+            include: {
+              tbl_categories: true,
+            },
+          },
+        },
+      });
+
+      const popularTopics = await this.prismaService.tbl_categories.findMany({
+        take: 8,
+        include: {
+          tbl_course_categories: {
+            where: {
+              tbl_courses: {
+                approved: COURSE_APPROVE_STATUS.APPROVED,
+              },
+            },
+            include: {
+              tbl_courses: true,
+            },
+          },
+        },
+      });
+
+      const formattedTopics = popularTopics.map(
+        (topic) =>
+          new HomepageTopicEntity({
+            id: topic.categoryId,
+            name: topic.categoryType,
+            courseCount: topic.tbl_course_categories.length,
+          }),
+      );
+
+      const popularMentors = await this.prismaService.tbl_instructors.findMany({
+        where: {
+          isVerified: true,
+          tbl_courses: {
+            some: {
+              approved: COURSE_APPROVE_STATUS.APPROVED,
+            },
+          },
+        },
+        take: 4,
+        include: {
+          tbl_users: true,
+          tbl_courses: {
+            where: {
+              approved: COURSE_APPROVE_STATUS.APPROVED,
+            },
+            take: 1,
+          },
+        },
+        orderBy: {
+          average_rating: 'desc',
+        },
+      });
+
+      const formattedMentors = popularMentors.map(
+        (mentor) =>
+          new HomepageMentorEntity({
+            id: mentor.instructorId,
+            name: `${mentor.tbl_users?.firstName || ''} ${mentor.tbl_users?.lastName || ''}`.trim(),
+            role: mentor.tbl_users?.role || ROLE.INSTRUCTOR,
+            avatar: mentor.profilePicture || mentor.tbl_users?.avatar || '',
+            courseCount: mentor.tbl_courses.length,
+            rating: mentor.average_rating?.toNumber() || 0,
+          }),
+      );
+
+      return {
+        recommendedCourses: recommendedCourses.map((course) =>
+          this.formatCourseForHomepage(course),
+        ),
+        bestSellerCourses: bestSellerCourses.map((course) =>
+          this.formatCourseForHomepage(course),
+        ),
+        topics: formattedTopics,
+        mentors: formattedMentors,
+      };
+    } catch (error) {
+      console.log('Error getting homepage courses:', error);
+      throw error;
+    }
+  }
+
+  private formatCourseForHomepage(
+    course: HomepageCourse,
+  ): HomepageCourseEntity {
+    // Calculate average rating
+    const reviews = course.tbl_course_reviews || [];
+    const totalReviews = reviews.length;
+
+    let averageRating = 0;
+    if (course.rating) {
+      if (typeof course.rating.toNumber === 'function') {
+        averageRating = Number(course.rating.toNumber().toFixed(1));
+      } else {
+        averageRating = Number(Number(course.rating).toFixed(1));
+      }
+    }
+
+    // Get instructor name
+    const instructor = course.tbl_instructors
+      ? `${course.tbl_instructors.tbl_users?.firstName || ''} ${course.tbl_instructors.tbl_users?.lastName || ''}`.trim()
+      : 'Unknown Instructor';
+
+    // Calculate prices
+    const currentPrice = course.price?.toNumber() || 100000;
+    const originalPrice = Math.round(currentPrice * 1.2); // Example discount calculation
+
+    // Get categories
+    const categories =
+      course.tbl_course_categories?.map((cc) => ({
+        id: cc.tbl_categories?.categoryId,
+        name: cc.tbl_categories?.categoryType,
+      })) || [];
+
+    return new HomepageCourseEntity({
+      id: course.courseId,
+      title: course.title || 'Khóa học: Chưa có tiêu đề',
+      instructor: instructor,
+      rating: averageRating,
+      reviews: totalReviews,
+      currentPrice: `₫${currentPrice.toLocaleString()}`,
+      originalPrice: `₫${originalPrice.toLocaleString()}`,
+      isBestSeller: course.isBestSeller || false,
+      image: course.thumbnail || '',
+      updatedAt: course.updatedAt,
+      updatedDate: formatDate(course.updatedAt),
+      totalHours: Math.round(course.durationTime || 600) / 60 || 10,
+      description: course.description || 'Không có mô tả khóa học',
+      categories: categories,
+    });
   }
 }
