@@ -4,6 +4,7 @@ import { CreateCourseDto } from '../dto/course.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { Prisma } from '@prisma/client';
 import { CreateSimpleCourseDto } from '../dto/create-course.dto';
+import { UpdateCourseDetailsDto } from '../dto/update-course-details.dto';
 
 // import { SearchCourseDto } from '../dto/search-course.dto';
 import { Decimal } from '@prisma/client/runtime/library'; // Nếu bạn dùng Prisma
@@ -262,6 +263,7 @@ export class CourseService {
       })),
     };
   }
+  
   async searchCourses(params: SearchCourseParams) {
     const {
       query,
@@ -389,6 +391,134 @@ export class CourseService {
         limit,
         totalPages: Math.ceil(totalCount / limit),
       },
+    };
+  }
+
+  async updateCourseDetails(courseId: string, body: UpdateCourseDetailsDto) {
+    const { learningObjectives, requirements, targetAudience } = body;
+
+    // Cập nhật learning objectives
+    await this.prismaService.tbl_course_learning_objectives.deleteMany({
+      where: { courseId },
+    });
+    await this.prismaService.tbl_course_learning_objectives.createMany({
+      data: learningObjectives.map((obj, index) => ({
+        objectiveId: uuidv4(),
+        courseId,
+        description: obj,
+        orderIndex: index,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })),
+    });
+
+    // Cập nhật requirements
+    await this.prismaService.tbl_course_requirements.deleteMany({
+      where: { courseId },
+    });
+    await this.prismaService.tbl_course_requirements.createMany({
+      data: requirements.map((req, index) => ({
+        requirementId: uuidv4(),
+        courseId,
+        description: req,
+        orderIndex: index,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })),
+    });
+
+    // Cập nhật target audience
+    await this.prismaService.tbl_course_target_audience.deleteMany({
+      where: { courseId },
+    });
+    await this.prismaService.tbl_course_target_audience.createMany({
+      data: targetAudience.map((aud, index) => ({
+        audienceId: uuidv4(),
+        courseId,
+        description: aud,
+        orderIndex: index,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })),
+    });
+
+    return this.getCourseWithDetails(courseId);
+  }
+
+  async updateLearningObjectives(courseId: string, learningObjectives: string[]) {
+    // Xóa tất cả mục tiêu hiện có
+    await this.prismaService.tbl_course_learning_objectives.deleteMany({
+      where: { courseId },
+    });
+    
+    // Tạo lại tất cả với orderIndex mới
+    await this.prismaService.tbl_course_learning_objectives.createMany({
+      data: learningObjectives.map((obj, index) => ({
+        objectiveId: uuidv4(),
+        courseId,
+        description: obj,
+        orderIndex: index,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })),
+    });
+    
+    return this.getCourseWithDetails(courseId);
+  }
+
+  async updateRequirements(courseId: string, requirements: string[]) {
+    await this.prismaService.tbl_course_requirements.deleteMany({
+      where: { courseId },
+    });
+    await this.prismaService.tbl_course_requirements.createMany({
+      data: requirements.map((req, index) => ({
+        requirementId: uuidv4(),
+        courseId,
+        description: req,
+        orderIndex: index,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })),
+    });
+
+    return this.getCourseWithDetails(courseId);
+  }
+
+  async updateTargetAudience(courseId: string, targetAudience: string[]) {
+    await this.prismaService.tbl_course_target_audience.deleteMany({
+      where: { courseId },
+    });
+    await this.prismaService.tbl_course_target_audience.createMany({
+      data: targetAudience.map((aud, index) => ({
+        audienceId: uuidv4(),
+        courseId,
+        description: aud,
+        orderIndex: index,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })),
+    });
+
+    return this.getCourseWithDetails(courseId);
+  }
+
+  async getCourseDetails(courseId: string) {
+    const learningObjectives = await this.prismaService.tbl_course_learning_objectives.findMany({
+      where: { courseId },
+    });
+
+    const requirements = await this.prismaService.tbl_course_requirements.findMany({
+      where: { courseId },
+    });
+
+    const targetAudience = await this.prismaService.tbl_course_target_audience.findMany({
+      where: { courseId },
+    });
+
+    return {
+      learningObjectives,
+      requirements,
+      targetAudience,
     };
   }
 
