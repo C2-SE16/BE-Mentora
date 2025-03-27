@@ -5,6 +5,7 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
 import { CourseModule } from './common/modules/course.module';
 import { CategoryModule } from './common/modules/category.module';
 import { UploadModule } from 'src/common/modules/upload.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { UploadModule } from 'src/common/modules/upload.module';
     CourseModule,
     CategoryModule,
     UploadModule,
+    AuthModule,
   ],
   controllers: [],
   providers: [
