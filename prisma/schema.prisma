@@ -115,44 +115,17 @@ model tbl_instructors {
   tbl_users      tbl_users?    @relation(fields: [userId], references: [userId], onDelete: NoAction, onUpdate: NoAction)
 }
 
-model tbl_lesson_progess {
-  lessonProgressId   String                @id @db.Uuid
-  userId             String?               @db.Uuid
-  lessonId           String?               @db.Uuid
-  status             lesson_progress_enum?
-  progressPercentage Int?                  @default(0)
-  lastWatchPosition  Int?                  @default(0)
-  completedAt        DateTime?             @db.Timestamp(6)
-  tbl_lessons        tbl_lessons?          @relation(fields: [lessonId], references: [lessonId], onDelete: NoAction, onUpdate: NoAction)
-  tbl_users          tbl_users?            @relation(fields: [userId], references: [userId], onDelete: NoAction, onUpdate: NoAction)
-}
-
-model tbl_lessons {
-  lessonId           String               @id @db.Uuid
-  moduleId           String?              @db.Uuid
-  title              String?              @db.VarChar
-  contentType        lesson_enum
-  contentUrl         String?              @db.VarChar(255)
-  duration           Int?
-  orderIndex         Int
-  description        String?
-  isFree             Boolean?
-  createdAt          DateTime?            @db.Timestamp(6)
-  updatedAt          DateTime?            @db.Timestamp(6)
-  tbl_lesson_progess tbl_lesson_progess[]
-  tbl_modules        tbl_modules?         @relation(fields: [moduleId], references: [moduleId], onDelete: NoAction, onUpdate: NoAction)
-}
 
 model tbl_modules {
-  moduleId    String        @id @db.Uuid
-  courseId    String?       @db.Uuid
-  title       String?       @db.VarChar
-  orderIndex  Int
-  description String?
-  createdAt   DateTime?     @db.Timestamp(6)
-  updatedAt   DateTime?     @db.Timestamp(6)
-  tbl_lessons tbl_lessons[]
-  tbl_courses tbl_courses?  @relation(fields: [courseId], references: [courseId], onDelete: NoAction, onUpdate: NoAction)
+  moduleId      String            @id @db.Uuid
+  courseId      String?           @db.Uuid
+  title         String?           @db.VarChar
+  orderIndex    Int
+  description   String?
+  createdAt     DateTime?         @db.Timestamp(6)
+  updatedAt     DateTime?         @db.Timestamp(6)
+  tbl_courses   tbl_courses?      @relation(fields: [courseId], references: [courseId], onDelete: NoAction, onUpdate: NoAction)
+  tbl_curricula tbl_curricula[]
 }
 
 model tbl_order_details {
@@ -196,9 +169,11 @@ model tbl_users {
   tbl_course_reviews        tbl_course_reviews[]
   tbl_favorites             tbl_favorites[]
   tbl_instructors           tbl_instructors[]
-  tbl_lesson_progess        tbl_lesson_progess[]
   tbl_payment               tbl_payment[]
   tbl_voucher_usage_history tbl_voucher_usage_history[]
+  tbl_lecture_progress      tbl_lecture_progress[]
+  tbl_quiz_attempts         tbl_quiz_attempts[]
+  tbl_curriculum_progress   tbl_curriculum_progress[]
 }
 
 model tbl_voucher_courses {
@@ -270,6 +245,125 @@ model tbl_course_target_audience {
   tbl_courses   tbl_courses? @relation(fields: [courseId], references: [courseId], onDelete: NoAction, onUpdate: NoAction)
 }
 
+model tbl_curricula {
+  curriculumId   String           @id @db.Uuid
+  moduleId       String?          @db.Uuid
+  title          String?          @db.VarChar
+  orderIndex     Int
+  type           curriculum_enum
+  description    String?
+  createdAt      DateTime?        @db.Timestamp(6)
+  updatedAt      DateTime?        @db.Timestamp(6)
+  tbl_modules    tbl_modules?     @relation(fields: [moduleId], references: [moduleId], onDelete: NoAction, onUpdate: NoAction)
+  tbl_lectures   tbl_lectures[]
+  tbl_quizzes    tbl_quizzes[]
+  tbl_curriculum_progress tbl_curriculum_progress[]
+}
+
+model tbl_curriculum_progress {
+  progressId     String           @id @db.Uuid
+  userId         String?          @db.Uuid
+  curriculumId   String?          @db.Uuid
+  status         progress_enum?   @default(NOT_STARTED)
+  completedAt    DateTime?        @db.Timestamp(6)
+  createdAt      DateTime?        @db.Timestamp(6)
+  updatedAt      DateTime?        @db.Timestamp(6)
+  tbl_curricula  tbl_curricula?   @relation(fields: [curriculumId], references: [curriculumId], onDelete: NoAction, onUpdate: NoAction)
+  tbl_users      tbl_users?       @relation(fields: [userId], references: [userId], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model tbl_lectures {
+  lectureId      String           @id @db.Uuid
+  curriculumId   String?          @db.Uuid
+  title          String?          @db.VarChar
+  description    String?
+  videoUrl       String?          @db.VarChar(255)
+  articleContent String?
+  duration       Int?
+  isFree         Boolean?         @default(false)
+  createdAt      DateTime?        @db.Timestamp(6)
+  updatedAt      DateTime?        @db.Timestamp(6)
+  tbl_curricula  tbl_curricula?   @relation(fields: [curriculumId], references: [curriculumId], onDelete: NoAction, onUpdate: NoAction)
+  tbl_lecture_progress tbl_lecture_progress[]
+}
+
+model tbl_quizzes {
+  quizId         String           @id @db.Uuid
+  curriculumId   String?          @db.Uuid
+  title          String?          @db.VarChar
+  description    String?
+  passingScore   Int?             @default(70)
+  timeLimit      Int?             // Thời gian làm bài tính bằng phút
+  isFree         Boolean?         @default(false)
+  createdAt      DateTime?        @db.Timestamp(6)
+  updatedAt      DateTime?        @db.Timestamp(6)
+  tbl_curricula  tbl_curricula?   @relation(fields: [curriculumId], references: [curriculumId], onDelete: NoAction, onUpdate: NoAction)
+  tbl_questions  tbl_questions[]
+  tbl_quiz_attempts tbl_quiz_attempts[]
+}
+
+model tbl_questions {
+  questionId     String           @id @db.Uuid
+  quizId         String?          @db.Uuid
+  questionText   String
+  questionType   question_type_enum
+  orderIndex     Int
+  points         Int              @default(1)
+  createdAt      DateTime?        @db.Timestamp(6)
+  updatedAt      DateTime?        @db.Timestamp(6)
+  tbl_quizzes    tbl_quizzes?     @relation(fields: [quizId], references: [quizId], onDelete: NoAction, onUpdate: NoAction)
+  tbl_answers    tbl_answers[]
+}
+
+model tbl_answers {
+  answerId       String           @id @db.Uuid
+  questionId     String?          @db.Uuid
+  answerText     String
+  isCorrect      Boolean
+  explanation    String?
+  createdAt      DateTime?        @db.Timestamp(6)
+  updatedAt      DateTime?        @db.Timestamp(6)
+  tbl_questions  tbl_questions?   @relation(fields: [questionId], references: [questionId], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model tbl_lecture_progress {
+  progressId     String           @id @db.Uuid
+  userId         String?          @db.Uuid
+  lectureId      String?          @db.Uuid
+  status         progress_enum?
+  lastPosition   Int?             @default(0)  // Vị trí xem video cuối cùng (giây)
+  completedAt    DateTime?        @db.Timestamp(6)
+  createdAt      DateTime?        @db.Timestamp(6)
+  updatedAt      DateTime?        @db.Timestamp(6)
+  tbl_lectures   tbl_lectures?    @relation(fields: [lectureId], references: [lectureId], onDelete: NoAction, onUpdate: NoAction)
+  tbl_users      tbl_users?       @relation(fields: [userId], references: [userId], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model tbl_quiz_attempts {
+  attemptId      String           @id @db.Uuid
+  userId         String?          @db.Uuid
+  quizId         String?          @db.Uuid
+  score          Int
+  isPassed       Boolean
+  startedAt      DateTime         @db.Timestamp(6)
+  completedAt    DateTime?        @db.Timestamp(6)
+  createdAt      DateTime?        @db.Timestamp(6)
+  updatedAt      DateTime?        @db.Timestamp(6)
+  tbl_quizzes    tbl_quizzes?     @relation(fields: [quizId], references: [quizId], onDelete: NoAction, onUpdate: NoAction)
+  tbl_users      tbl_users?       @relation(fields: [userId], references: [userId], onDelete: NoAction, onUpdate: NoAction)
+  tbl_quiz_answers tbl_quiz_answers[]
+}
+
+model tbl_quiz_answers {
+  userAnswerId   String           @id @db.Uuid
+  attemptId      String?          @db.Uuid
+  questionId     String?          @db.Uuid
+  answerId       String?          @db.Uuid
+  isCorrect      Boolean
+  createdAt      DateTime?        @db.Timestamp(6)
+  tbl_quiz_attempts tbl_quiz_attempts? @relation(fields: [attemptId], references: [attemptId], onDelete: NoAction, onUpdate: NoAction)
+}
+
 enum approve_enum {
   PENDING
   APPROVED
@@ -283,17 +377,6 @@ enum category_enum {
   BUSSINESS
 }
 
-enum lesson_enum {
-  VIDEO
-  ARTICLE
-  QUIZ
-}
-
-enum lesson_progress_enum {
-  NOT_STARTED
-  IN_PROGRESS
-  COMPLETED
-}
 
 enum payment_enum {
   COMPLETED
@@ -313,4 +396,21 @@ enum voucher_scope_enum {
   ALL_COURSES
   SPECIFIC_COURSES
   CATEGORY
+}
+
+enum curriculum_enum {
+  LECTURE
+  QUIZ
+}
+
+enum question_type_enum {
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+}
+
+enum progress_enum {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
 }
