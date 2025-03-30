@@ -1,12 +1,14 @@
 import {
-  IsOptional,
   IsString,
+  IsOptional,
   IsNumber,
-  IsEnum,
+  IsBoolean,
   Min,
   Max,
+  IsUUID,
+  IsIn,
 } from 'class-validator';
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 
 export enum SortOrder {
   ASC = 'asc',
@@ -14,51 +16,70 @@ export enum SortOrder {
 }
 
 export class SearchCourseDto {
-  @IsOptional()
   @IsString()
+  @IsOptional()
   query?: string;
 
-  @IsOptional()
-  @Transform(({ value }) => parseInt(value))
+  @Type(() => Number)
   @IsNumber()
   @Min(1)
+  @IsOptional()
   page?: number = 1;
 
-  @IsOptional()
-  @Transform(({ value }) => parseInt(value))
+  @Type(() => Number)
   @IsNumber()
   @Min(1)
-  @Max(50)
+  @IsOptional()
   limit?: number = 10;
 
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
   @IsOptional()
-  @Transform(({ value }) => parseFloat(value))
+  minPrice?: number;
+
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  maxPrice?: number;
+
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
   @Max(5)
+  @IsOptional()
   minRating?: number;
 
+  @IsUUID()
   @IsOptional()
-  @IsString()
   categoryId?: string;
 
+  @IsBoolean()
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
   @IsOptional()
+  isBestSeller?: boolean;
+
+  @IsBoolean()
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
+  @IsOptional()
+  isRecommended?: boolean;
+
   @IsString()
+  @IsOptional()
+  @IsIn(['title', 'price', 'rating', 'createdAt', 'updatedAt'])
   sortBy?: string = 'createdAt';
 
+  @IsString()
   @IsOptional()
-  @IsEnum(SortOrder)
-  sortOrder?: SortOrder = SortOrder.DESC;
-
-  @IsOptional()
-  @Transform(({ value }) => parseFloat(value))
-  @IsNumber()
-  @Min(0)
-  minPrice?: number;
-
-  @IsOptional()
-  @Transform(({ value }) => parseFloat(value))
-  @IsNumber()
-  @Min(0)
-  maxPrice?: number;
+  @IsIn(['asc', 'desc'])
+  sortOrder?: string = 'desc';
 }

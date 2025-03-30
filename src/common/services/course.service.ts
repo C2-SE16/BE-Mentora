@@ -5,9 +5,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { Prisma } from '@prisma/client';
 import { CreateSimpleCourseDto } from '../dto/create-course.dto';
 import { UpdateCourseDetailsDto } from '../dto/update-course-details.dto';
-
-// import { SearchCourseDto } from '../dto/search-course.dto';
-import { Decimal } from '@prisma/client/runtime/library'; // Nếu bạn dùng Prisma
 import { COURSE_APPROVE_STATUS } from '../constants/course.constant';
 import { ROLE } from '../constants/role.constant';
 import { HomepageCourse } from '../interfaces/homepage-course.interface';
@@ -18,6 +15,9 @@ import {
   HomepageTopicEntity,
 } from 'src/entities/homepage-course.entity';
 import { formatDate } from '../utils/formatDate.util';
+import { ElasticsearchService } from './elasticsearch.service';
+import { SearchCourseDto } from '../dto/search-course.dto';
+import { CourseSearchResult } from '../interfaces/course.interface';
 interface SearchCourseParams {
   query?: string;
   page?: number;
@@ -31,7 +31,10 @@ interface SearchCourseParams {
 }
 @Injectable()
 export class CourseService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly elasticsearchService: ElasticsearchService,
+  ) {}
 
   createCourse(body: CreateCourseDto) {
     return this.prismaService.tbl_courses.create({
@@ -263,134 +266,60 @@ export class CourseService {
       })),
     };
   }
-  
-  async searchCourses(params: SearchCourseParams) {
-    const {
-      query,
-      page = 1,
-      limit = 10,
-      minRating,
-      categoryId,
-      sortBy = 'createdAt',
-      sortOrder = 'desc',
-      minPrice,
-      maxPrice,
-    } = params;
 
-    const skip = (page - 1) * limit;
+  // Phương thức tìm kiếm sử dụng Elasticsearch
+  async searchCourses(searchDto: SearchCourseDto) {
+    const { page = 1, limit = 10 } = searchDto;
 
-    const whereClause: Prisma.tbl_coursesWhereInput = {};
+    const { total, results } =
+      await this.elasticsearchService.searchCourses(searchDto);
 
-    if (query) {
-      whereClause.OR = [
-        { title: { contains: query, mode: 'insensitive' } },
-        { description: { contains: query, mode: 'insensitive' } },
-      ];
-    }
-
-    if (minRating) {
-      whereClause.rating = { gte: minRating };
-    }
-
-    if (categoryId) {
-      whereClause.tbl_course_categories = {
-        some: { categoryId },
+    if (results.length === 0) {
+      return {
+        courses: [],
+        total: 0,
+        page,
+        limit,
+        totalPages: 0,
       };
     }
 
-    if (minPrice !== undefined || maxPrice !== undefined) {
-      whereClause.price = {};
+    const courseIds = results.map(
+      (result) => (result as unknown as CourseSearchResult).courseId,
+    );
 
-      if (minPrice !== undefined) {
-        whereClause.price.gte = minPrice;
-      }
-
-      if (maxPrice !== undefined) {
-        whereClause.price.lte = maxPrice;
-      }
-    }
-
-    // Đếm tổng số kết quả
-    const totalCount = await this.prismaService.tbl_courses.count({
-      where: whereClause,
-    });
-
-    // Lấy danh sách khóa học
     const courses = await this.prismaService.tbl_courses.findMany({
-      where: whereClause,
-      skip,
-      take: limit,
-      orderBy: {
-        [sortBy]: sortOrder.toLowerCase(),
+      where: {
+        courseId: {
+          in: courseIds,
+        },
       },
       include: {
         tbl_instructors: true,
-        tbl_course_reviews: {
-          select: {
-            rating: true,
-          },
-        },
         tbl_course_categories: {
           include: {
             tbl_categories: true,
           },
         },
+        tbl_course_reviews: {
+          select: {
+            rating: true,
+          },
+        },
       },
     });
 
-    // Format the response
-    const formattedCourses = courses.map((course) => {
-      const reviews = course.tbl_course_reviews || [];
-      const totalRating = reviews.reduce(
-        (sum, review) =>
-          sum +
-          (review.rating instanceof Decimal
-            ? review.rating.toNumber()
-            : review.rating || 0),
-        0,
-      );
-      const averageRating =
-        reviews.length > 0 ? totalRating / reviews.length : course.rating || 0;
-
-      // Get instructor name
-      const instructor = course.tbl_instructors
-        ? course.tbl_instructors.userId || 'Unknown Instructor'
-        : 'Unknown Instructor';
-
-      return {
-        id: course.courseId,
-        title: course.title,
-        description: course.description,
-        price:
-          course.price instanceof Decimal
-            ? course.price.toNumber()
-            : course.price,
-        discountPrice:
-          course.price instanceof Decimal
-            ? course.price.toNumber()
-            : course.price,
-        // Use a default thumbnail path since the property doesn't exist
-        thumbnail: `/courses/${course.courseId}.jpg`,
-        instructor,
-        instructorAvatar:
-          course.tbl_instructors?.profilePicture || '/avatars/default.jpg',
-        rating: averageRating,
-        ratingCount: reviews.length,
-        categories: course.tbl_course_categories.map((cc) => ({
-          id: cc.tbl_categories?.categoryId,
-          name: cc.tbl_categories?.categoryType,
-        })),
-      };
-    });
+    // Sắp xếp kết quả theo thứ tự từ Elasticsearch
+    const orderedCourses = courseIds
+      .map((id) => courses.find((course) => course.courseId === id))
+      .filter(Boolean);
 
     return {
-      courses: formattedCourses,
-      pagination: {
-        total: totalCount,
-        page,
-        limit,
-        totalPages: Math.ceil(totalCount / limit),
-      },
+      courses: orderedCourses,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
     };
   }
 
@@ -445,12 +374,15 @@ export class CourseService {
     return this.getCourseWithDetails(courseId);
   }
 
-  async updateLearningObjectives(courseId: string, learningObjectives: string[]) {
+  async updateLearningObjectives(
+    courseId: string,
+    learningObjectives: string[],
+  ) {
     // Xóa tất cả mục tiêu hiện có
     await this.prismaService.tbl_course_learning_objectives.deleteMany({
       where: { courseId },
     });
-    
+
     // Tạo lại tất cả với orderIndex mới
     await this.prismaService.tbl_course_learning_objectives.createMany({
       data: learningObjectives.map((obj, index) => ({
@@ -462,7 +394,7 @@ export class CourseService {
         updatedAt: new Date(),
       })),
     });
-    
+
     return this.getCourseWithDetails(courseId);
   }
 
@@ -503,17 +435,20 @@ export class CourseService {
   }
 
   async getCourseDetails(courseId: string) {
-    const learningObjectives = await this.prismaService.tbl_course_learning_objectives.findMany({
-      where: { courseId },
-    });
+    const learningObjectives =
+      await this.prismaService.tbl_course_learning_objectives.findMany({
+        where: { courseId },
+      });
 
-    const requirements = await this.prismaService.tbl_course_requirements.findMany({
-      where: { courseId },
-    });
+    const requirements =
+      await this.prismaService.tbl_course_requirements.findMany({
+        where: { courseId },
+      });
 
-    const targetAudience = await this.prismaService.tbl_course_target_audience.findMany({
-      where: { courseId },
-    });
+    const targetAudience =
+      await this.prismaService.tbl_course_target_audience.findMany({
+        where: { courseId },
+      });
 
     return {
       learningObjectives,
