@@ -6,6 +6,7 @@ import { CourseModule } from './common/modules/course.module';
 import { CategoryModule } from './common/modules/category.module';
 import { UploadModule } from 'src/common/modules/upload.module';
 import { AuthModule } from './auth/auth.module';
+import { VideoModule } from 'src/common/modules/video.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { AuthModule } from './auth/auth.module';
     CategoryModule,
     UploadModule,
     AuthModule,
+    VideoModule,
   ],
   controllers: [],
   providers: [
