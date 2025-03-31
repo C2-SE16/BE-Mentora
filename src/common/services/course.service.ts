@@ -161,9 +161,22 @@ export class CourseService {
         tbl_course_target_audience: true,
         tbl_modules: {
           include: {
-            tbl_lessons: {
+            tbl_curricula: {
               include: {
-                tbl_lesson_progess: true,
+                tbl_lectures: {
+                  include: {
+                    tbl_lecture_progress: true,
+                  },
+                },
+                tbl_quizzes: {
+                  include: {
+                    tbl_questions: {
+                      include: {
+                        tbl_answers: true,
+                      },
+                    },
+                  },
+                },
               },
             },
           },
@@ -185,7 +198,15 @@ export class CourseService {
       comment: course.comment,
       createdAt: course.createdAt,
       updatedAt: course.updatedAt,
-      reviews: course.tbl_course_reviews,
+      reviews: course.tbl_course_reviews.map((review) => ({
+        reviewId: review.reviewId,
+        courseId: review.courseId,
+        userId: review.userId,
+        rating: review.rating ? Number(review.rating) : 0,
+        comment: review.comment,
+        createdAt: review.createdAt,
+        updatedAt: review.updatedAt,
+      })),
       instructor: course.tbl_instructors
         ? {
             instructorId: course.tbl_instructors.instructorId,
@@ -193,12 +214,12 @@ export class CourseService {
             bio: course.tbl_instructors.bio,
             profilePicture: course.tbl_instructors.profilePicture,
             experience: course.tbl_instructors.experience,
-            averageRating: course.tbl_instructors.average_rating,
+            averageRating: course.tbl_instructors.average_rating
+              ? Number(course.tbl_instructors.average_rating)
+              : 0,
             isVerified: course.tbl_instructors.isVerified,
             createdAt: course.tbl_instructors.createdAt,
             updatedAt: course.tbl_instructors.updatedAt,
-
-            // Thêm thông tin user liên kết với instructor
             user: course.tbl_instructors.tbl_users
               ? {
                   userId: course.tbl_instructors.tbl_users.userId,
@@ -223,7 +244,6 @@ export class CourseService {
           updatedAt: objective.updatedAt,
         }),
       ),
-
       requirements: course.tbl_course_requirements.map((requirement) => ({
         requirementId: requirement.requirementId,
         courseId: requirement.courseId,
@@ -232,7 +252,6 @@ export class CourseService {
         createdAt: requirement.createdAt,
         updatedAt: requirement.updatedAt,
       })),
-
       targetAudience: course.tbl_course_target_audience.map((audience) => ({
         audienceId: audience.audienceId,
         courseId: audience.courseId,
@@ -249,23 +268,77 @@ export class CourseService {
         description: module.description,
         createdAt: module.createdAt,
         updatedAt: module.updatedAt,
-        lessons: module.tbl_lessons.map((lesson) => ({
-          lessonId: lesson.lessonId,
-          moduleId: lesson.moduleId,
-          title: lesson.title,
-          contentType: lesson.contentType,
-          contentUrl: lesson.contentUrl,
-          duration: lesson.duration,
-          orderIndex: lesson.orderIndex,
-          description: lesson.description,
-          isFree: lesson.isFree,
-          createdAt: lesson.createdAt,
-          updatedAt: lesson.updatedAt,
-          progress: lesson.tbl_lesson_progess,
+        curricula: module.tbl_curricula.map((curriculum) => ({
+          curriculumId: curriculum.curriculumId,
+          moduleId: curriculum.moduleId,
+          title: curriculum.title,
+          orderIndex: curriculum.orderIndex,
+          type: curriculum.type,
+          description: curriculum.description,
+          createdAt: curriculum.createdAt,
+          updatedAt: curriculum.updatedAt,
+          lectures: curriculum.tbl_lectures.map((lecture) => ({
+            lectureId: lecture.lectureId,
+            curriculumId: lecture.curriculumId,
+            title: lecture.title,
+            description: lecture.description,
+            videoUrl: lecture.videoUrl,
+            duration: lecture.duration,
+            isFree: lecture.isFree,
+            createdAt: lecture.createdAt,
+            updatedAt: lecture.updatedAt,
+            progress: lecture.tbl_lecture_progress,
+          })),
+          quizzes: curriculum.tbl_quizzes.map((quiz) => ({
+            quizId: quiz.quizId,
+            curriculumId: quiz.curriculumId,
+            title: quiz.title,
+            description: quiz.description,
+            passingScore: quiz.passingScore,
+            timeLimit: quiz.timeLimit,
+            isFree: quiz.isFree,
+            createdAt: quiz.createdAt,
+            updatedAt: quiz.updatedAt,
+            questions: quiz.tbl_questions.map((question) => ({
+              questionId: question.questionId,
+              quizId: question.quizId,
+              questionText: question.questionText,
+              questionType: question.questionType,
+              orderIndex: question.orderIndex,
+              points: question.points,
+              createdAt: question.createdAt,
+              updatedAt: question.updatedAt,
+              answers: question.tbl_answers.map((answer) => ({
+                answerId: answer.answerId,
+                questionId: answer.questionId,
+                answerText: answer.answerText,
+                isCorrect: answer.isCorrect,
+                explanation: answer.explanation,
+                createdAt: answer.createdAt,
+                updatedAt: answer.updatedAt,
+              })),
+            })),
+          })),
         })),
       })),
     };
   }
+<<<<<<< HEAD
+
+  async searchCourses(params: SearchCourseParams) {
+    const {
+      query,
+      page = 1,
+      limit = 10,
+      minRating,
+      categoryId,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      minPrice,
+      maxPrice,
+    } = params;
+=======
+>>>>>>> develop
 
   // Phương thức tìm kiếm sử dụng Elasticsearch
   async searchCourses(searchDto: SearchCourseDto) {
