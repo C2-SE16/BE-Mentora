@@ -8,6 +8,8 @@ import { UploadModule } from 'src/common/modules/upload.module';
 import { AuthModule } from './auth/auth.module';
 import { VideoModule } from 'src/common/modules/video.module';
 import { ReviewModule } from 'src/common/modules/review.module';
+import { ElasticsearchModule } from './common/modules/elasticsearch.module';
+import { ElasticsearchController } from './common/controllers/elasticsearch.controller';
 
 @Module({
   imports: [
@@ -21,8 +23,9 @@ import { ReviewModule } from 'src/common/modules/review.module';
     AuthModule,
     VideoModule,
     ReviewModule,
+    ElasticsearchModule,
   ],
-  controllers: [],
+  controllers: [ElasticsearchController],
   providers: [
     { provide: APP_INTERCEPTOR, useClass: ClassSerializerInterceptor },
   ],

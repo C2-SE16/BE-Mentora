@@ -9,11 +9,13 @@ import {
   HttpException,
   HttpStatus,
   HttpCode,
+  ValidationPipe,
 } from '@nestjs/common';
 import { CourseService } from '../services/course.service';
 import { CreateCourseDto } from '../dto/course.dto';
 import { CreateSimpleCourseDto } from '../dto/create-course.dto';
 import { UpdateCourseDetailsDto } from '../dto/update-course-details.dto';
+import { SearchCourseDto } from '../dto/search-course.dto';
 
 @Controller('courses')
 export class CourseController {
@@ -21,27 +23,9 @@ export class CourseController {
 
   @Get('search')
   async searchCourses(
-    @Query('query') query?: string,
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
-    @Query('minRating') minRating?: number,
-    @Query('categoryId') categoryId?: string,
-    @Query('sortBy') sortBy?: string,
-    @Query('sortOrder') sortOrder?: string,
-    @Query('minPrice') minPrice?: number,
-    @Query('maxPrice') maxPrice?: number,
+    @Query(new ValidationPipe({ transform: true })) searchDto: SearchCourseDto,
   ) {
-    return this.courseService.searchCourses({
-      query,
-      page: page ? +page : undefined,
-      limit: limit ? +limit : undefined,
-      minRating: minRating ? +minRating : undefined,
-      categoryId,
-      sortBy,
-      sortOrder,
-      minPrice: minPrice ? +minPrice : undefined,
-      maxPrice: maxPrice ? +maxPrice : undefined,
-    });
+    return this.courseService.searchCourses(searchDto);
   }
 
   @Post('/create')
