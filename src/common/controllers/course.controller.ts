@@ -185,84 +185,109 @@ export class CourseController {
   @Post('/:courseId/details')
   async updateCourseDetails(
     @Param('courseId') courseId: string,
-    @Body() body: UpdateCourseDetailsDto
+    @Body() body: UpdateCourseDetailsDto,
   ) {
     try {
-      const updatedDetails = await this.courseService.updateCourseDetails(courseId, body);
+      const updatedDetails = await this.courseService.updateCourseDetails(
+        courseId,
+        body,
+      );
       return {
         success: true,
         data: updatedDetails,
         message: 'Course details updated successfully',
       };
     } catch (error: unknown) {
-      throw new HttpException({
-        success: false,
-        message: 'Failed to update course details',
-        error: (error as Error).message,
-      }, HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        {
+          success: false,
+          message: 'Failed to update course details',
+          error: (error as Error).message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
   @Post('/:courseId/learning-objectives')
   async updateLearningObjectives(
     @Param('courseId') courseId: string,
-    @Body('learningObjectives') learningObjectives: string[]
+    @Body('learningObjectives') learningObjectives: string[],
   ) {
     try {
-      const updatedObjectives = await this.courseService.updateLearningObjectives(courseId, learningObjectives);
+      const updatedObjectives =
+        await this.courseService.updateLearningObjectives(
+          courseId,
+          learningObjectives,
+        );
       return {
         success: true,
         data: updatedObjectives,
         message: 'Learning objectives updated successfully',
       };
     } catch (error: unknown) {
-      throw new HttpException({
-        success: false,
-        message: 'Failed to update learning objectives',
-        error: (error as Error).message,
-      }, HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        {
+          success: false,
+          message: 'Failed to update learning objectives',
+          error: (error as Error).message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
   @Post('/:courseId/requirements')
   async updateRequirements(
     @Param('courseId') courseId: string,
-    @Body('requirements') requirements: string[]
+    @Body('requirements') requirements: string[],
   ) {
     try {
-      const updatedRequirements = await this.courseService.updateRequirements(courseId, requirements);
+      const updatedRequirements = await this.courseService.updateRequirements(
+        courseId,
+        requirements,
+      );
       return {
         success: true,
         data: updatedRequirements,
         message: 'Requirements updated successfully',
       };
     } catch (error: unknown) {
-      throw new HttpException({
-        success: false,
-        message: 'Failed to update requirements',
-        error: (error as Error).message,
-      }, HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        {
+          success: false,
+          message: 'Failed to update requirements',
+          error: (error as Error).message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
   @Post('/:courseId/target-audience')
   async updateTargetAudience(
     @Param('courseId') courseId: string,
-    @Body('targetAudience') targetAudience: string[]
+    @Body('targetAudience') targetAudience: string[],
   ) {
     try {
-      const updatedAudience = await this.courseService.updateTargetAudience(courseId, targetAudience);
+      const updatedAudience = await this.courseService.updateTargetAudience(
+        courseId,
+        targetAudience,
+      );
       return {
         success: true,
         data: updatedAudience,
         message: 'Target audience updated successfully',
       };
     } catch (error: unknown) {
-      throw new HttpException({
-        success: false,
-        message: 'Failed to update target audience',
-        error: (error as Error).message,
-      }, HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        {
+          success: false,
+          message: 'Failed to update target audience',
+          error: (error as Error).message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -271,10 +296,13 @@ export class CourseController {
     try {
       const details = await this.courseService.getCourseDetails(courseId);
       if (!details) {
-        throw new HttpException({
-          success: false,
-          message: 'Details not found',
-        }, HttpStatus.NOT_FOUND);
+        throw new HttpException(
+          {
+            success: false,
+            message: 'Details not found',
+          },
+          HttpStatus.NOT_FOUND,
+        );
       }
       return {
         success: true,
@@ -282,11 +310,14 @@ export class CourseController {
         message: 'Course details retrieved successfully',
       };
     } catch (error: unknown) {
-      throw new HttpException({
-        success: false,
-        message: 'Failed to retrieve course details',
-        error: (error as Error).message,
-      }, HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        {
+          success: false,
+          message: 'Failed to retrieve course details',
+          error: (error as Error).message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
   @Get('/detail/:courseId')

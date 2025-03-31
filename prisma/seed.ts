@@ -5,6 +5,35 @@ import * as bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function main() {
+  // Xóa dữ liệu cũ
+  await prisma.tbl_quiz_answers.deleteMany();
+  await prisma.tbl_quiz_attempts.deleteMany();
+  await prisma.tbl_questions.deleteMany();
+  await prisma.tbl_quizzes.deleteMany();
+  await prisma.tbl_lecture_progress.deleteMany();
+  await prisma.tbl_lectures.deleteMany();
+  await prisma.tbl_curriculum_progress.deleteMany();
+  await prisma.tbl_curricula.deleteMany();
+  await prisma.tbl_modules.deleteMany();
+  await prisma.tbl_course_target_audience.deleteMany();
+  await prisma.tbl_course_requirements.deleteMany();
+  await prisma.tbl_course_learning_objectives.deleteMany();
+  await prisma.tbl_voucher_usage_history.deleteMany();
+  await prisma.tbl_voucher_courses.deleteMany();
+  await prisma.tbl_vouchers.deleteMany();
+  await prisma.tbl_order_details.deleteMany();
+  await prisma.tbl_payment.deleteMany();
+  await prisma.tbl_cart_items.deleteMany();
+  await prisma.tbl_cart.deleteMany();
+  await prisma.tbl_course_categories.deleteMany();
+  await prisma.tbl_course_enrollments.deleteMany();
+  await prisma.tbl_course_reviews.deleteMany();
+  await prisma.tbl_favorites.deleteMany();
+  await prisma.tbl_courses.deleteMany();
+  await prisma.tbl_instructors.deleteMany();
+  await prisma.tbl_categories.deleteMany();
+  await prisma.tbl_users.deleteMany();
+
   const adminUser = await prisma.tbl_users.create({
     data: {
       userId: uuidv4(),
@@ -92,6 +121,42 @@ async function main() {
     },
   });
 
+  // Thêm 3 review cho course1
+  await prisma.tbl_course_reviews.createMany({
+    data: [
+      {
+        reviewId: uuidv4(),
+        courseId: course1.courseId,
+        userId: studentUser.userId,
+        rating: 5,
+        comment:
+          'Khóa học rất hay và bổ ích! Giảng viên giảng dạy rất chi tiết và dễ hiểu. Tôi đã học được rất nhiều kiến thức mới.',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        reviewId: uuidv4(),
+        courseId: course1.courseId,
+        userId: adminUser.userId,
+        rating: 4,
+        comment:
+          'Nội dung khóa học khá tốt, phù hợp cho người mới bắt đầu. Tuy nhiên, có một số phần có thể cải thiện thêm.',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        reviewId: uuidv4(),
+        courseId: course1.courseId,
+        userId: instructorUser.userId,
+        rating: 4.5,
+        comment:
+          'Khóa học có cấu trúc rõ ràng, bài giảng được thiết kế logic. Giảng viên có kinh nghiệm và nhiệt tình trong giảng dạy.',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ],
+  });
+
   const module1 = await prisma.tbl_modules.create({
     data: {
       moduleId: uuidv4(),
@@ -104,16 +169,104 @@ async function main() {
     },
   });
 
-  await prisma.tbl_lessons.create({
+  const curriculum1 = await prisma.tbl_curricula.create({
     data: {
-      lessonId: uuidv4(),
+      curriculumId: uuidv4(),
       moduleId: module1.moduleId,
       title: 'Introduction to HTML',
-      contentType: 'VIDEO',
-      contentUrl: 'https://youtu.be/ok-plXXHlWw?si=RSHNUBrFWFRTqoBd',
-      duration: 30,
       orderIndex: 1,
+      type: 'LECTURE',
       description: 'Basic HTML concepts',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+  });
+
+  await prisma.tbl_lectures.create({
+    data: {
+      lectureId: uuidv4(),
+      curriculumId: curriculum1.curriculumId,
+      title: 'Introduction to HTML',
+      description: 'Basic HTML concepts',
+      videoUrl: 'https://youtu.be/ok-plXXHlWw?si=RSHNUBrFWFRTqoBd',
+      duration: 30,
+      isFree: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+  });
+  const module2 = await prisma.tbl_modules.create({
+    data: {
+      moduleId: uuidv4(),
+      courseId: course1.courseId,
+      title: 'CSS Fundamentals',
+      orderIndex: 2,
+      description: 'Learn CSS basics',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+  });
+
+  const curriculum2 = await prisma.tbl_curricula.create({
+    data: {
+      curriculumId: uuidv4(),
+      moduleId: module2.moduleId,
+      title: 'Introduction to CSS',
+      orderIndex: 1,
+      type: 'LECTURE',
+      description: 'Basic CSS concepts',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+  });
+
+  await prisma.tbl_lectures.create({
+    data: {
+      lectureId: uuidv4(),
+      curriculumId: curriculum2.curriculumId,
+      title: 'Introduction to CSS',
+      description: 'Basic CSS concepts',
+      videoUrl: 'https://youtu.be/OEV8gMkCHXQ',
+      duration: 35,
+      isFree: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+  });
+
+  const module3 = await prisma.tbl_modules.create({
+    data: {
+      moduleId: uuidv4(),
+      courseId: course1.courseId,
+      title: 'JavaScript Basics',
+      orderIndex: 3,
+      description: 'Learn JavaScript fundamentals',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+  });
+
+  const curriculum3 = await prisma.tbl_curricula.create({
+    data: {
+      curriculumId: uuidv4(),
+      moduleId: module3.moduleId,
+      title: 'Introduction to JavaScript',
+      orderIndex: 1,
+      type: 'LECTURE',
+      description: 'Basic JavaScript concepts',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+  });
+
+  await prisma.tbl_lectures.create({
+    data: {
+      lectureId: uuidv4(),
+      curriculumId: curriculum3.curriculumId,
+      title: 'Introduction to JavaScript',
+      description: 'Basic JavaScript concepts',
+      videoUrl: 'https://youtu.be/W6NZfCO5SIk',
+      duration: 40,
       isFree: true,
       createdAt: new Date(),
       updatedAt: new Date(),
