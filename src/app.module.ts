@@ -10,7 +10,9 @@ import { VideoModule } from 'src/common/modules/video.module';
 import { ReviewModule } from 'src/common/modules/review.module';
 import { ElasticsearchModule } from './common/modules/elasticsearch.module';
 import { ElasticsearchController } from './common/controllers/elasticsearch.controller';
-
+import { ModuleModule } from './common/modules/module.module';
+import { CurriculumModule } from './common/modules/curriculum.module';
+import { LectureModule } from './common/modules/lecture.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -24,6 +26,9 @@ import { ElasticsearchController } from './common/controllers/elasticsearch.cont
     VideoModule,
     ReviewModule,
     ElasticsearchModule,
+    ModuleModule,
+    CurriculumModule,
+    LectureModule,
   ],
   controllers: [ElasticsearchController],
   providers: [

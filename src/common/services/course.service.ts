@@ -323,22 +323,6 @@ export class CourseService {
       })),
     };
   }
-<<<<<<< HEAD
-
-  async searchCourses(params: SearchCourseParams) {
-    const {
-      query,
-      page = 1,
-      limit = 10,
-      minRating,
-      categoryId,
-      sortBy = 'createdAt',
-      sortOrder = 'desc',
-      minPrice,
-      maxPrice,
-    } = params;
-=======
->>>>>>> develop
 
   // Phương thức tìm kiếm sử dụng Elasticsearch
   async searchCourses(searchDto: SearchCourseDto) {
