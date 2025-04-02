@@ -6,17 +6,26 @@ import { v4 as uuidv4 } from 'uuid';
 export class ReviewService {
   constructor(private readonly prismaService: PrismaService) {}
 
-  createCourse(body: CreateReviewDto) {
-    return this.prismaService.tbl_course_reviews.create({
+  async createCourse(body: CreateReviewDto) {
+    const review = await this.prismaService.tbl_course_reviews.create({
       data: {
         reviewId: uuidv4(),
         courseId: body.courseId,
         userId: body.userId,
-        rating: body.rating,
+        rating: body.rating ? Number(body.rating) : 0,
         comment: body.comment,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
     });
+    return {
+      reviewId: review.courseId,
+      courseId: review.courseId,
+      userId: review.userId,
+      rating: review.rating ? Number(review.rating) : 0,
+      comment: review.comment,
+      createdAt: review.createdAt,
+      updatedAt: review.reviewId,
+    };
   }
 }
