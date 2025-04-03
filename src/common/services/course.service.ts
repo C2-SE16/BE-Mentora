@@ -150,7 +150,11 @@ export class CourseService {
     const course = await this.prismaService.tbl_courses.findUnique({
       where: { courseId: courseId },
       include: {
-        tbl_course_reviews: true,
+        tbl_course_reviews: {
+          include: {
+            tbl_users: true,
+          },
+        },
         tbl_course_learning_objectives: true,
         tbl_course_requirements: true,
         tbl_instructors: {
@@ -201,7 +205,18 @@ export class CourseService {
       reviews: course.tbl_course_reviews.map((review) => ({
         reviewId: review.reviewId,
         courseId: review.courseId,
-        userId: review.userId,
+        user: review.tbl_users
+          ? {
+              userId: review.tbl_users.userId,
+              email: review.tbl_users.email,
+              firstName: review.tbl_users.firstName,
+              lastName: review.tbl_users.lastName,
+              avatar: review.tbl_users.avatar,
+              role: review.tbl_users.role,
+              createdAt: review.tbl_users.createdAt,
+              updatedAt: review.tbl_users.updatedAt,
+            }
+          : null,
         rating: review.rating ? Number(review.rating) : 0,
         comment: review.comment,
         createdAt: review.createdAt,

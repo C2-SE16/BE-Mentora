@@ -39,3 +39,23 @@ export class CreateReviewDto {
   @IsNotEmpty()
   updatedAt: string;
 }
+
+export class UpdateReviewDto {
+  @IsNumber()
+  @Min(1)
+  @IsNotEmpty()
+  rating: number;
+
+  @IsString()
+  @MaxLength(500)
+  @IsOptional()
+  comment?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  createdAt: string;
+
+  @IsString()
+  @IsNotEmpty()
+  updatedAt: string;
+}
