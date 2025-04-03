@@ -1,12 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreateReviewDto } from 'src/common/dto/comment.dto';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { v4 as uuidv4 } from 'uuid';
+import { validate as isUUID } from 'uuid';
 @Injectable()
 export class ReviewService {
   constructor(private readonly prismaService: PrismaService) {}
 
-  async createCourse(body: CreateReviewDto) {
+  async createCourseReview(body: CreateReviewDto) {
     const review = await this.prismaService.tbl_course_reviews.create({
       data: {
         reviewId: uuidv4(),
@@ -19,13 +20,71 @@ export class ReviewService {
       },
     });
     return {
-      reviewId: review.courseId,
+      reviewId: review.reviewId,
       courseId: review.courseId,
       userId: review.userId,
       rating: review.rating ? Number(review.rating) : 0,
       comment: review.comment,
       createdAt: review.createdAt,
-      updatedAt: review.reviewId,
+      updatedAt: review.updatedAt,
     };
+  }
+
+  async updateCourseReview(reviewId: string, body: CreateReviewDto) {
+    try {
+      if (!isUUID(reviewId)) {
+        throw new Error(`Invalid UUID format: ${reviewId}`);
+      }
+      const newReview = await this.prismaService.tbl_course_reviews.update({
+        where: { reviewId: reviewId },
+        data: {
+          rating: body.rating ?? undefined,
+          comment: body.comment ?? undefined,
+          updatedAt: new Date(),
+        },
+      });
+      return {
+        ...newReview,
+        rating: newReview.rating ? Number(newReview.rating) : 0,
+      };
+    } catch (error) {
+      if (error.code === 'P2025') {
+        console.error(`Không tìm thấy review với ID: ${reviewId}`);
+        throw new HttpException(
+          `Không tìm thấy review với ID: ${reviewId}`,
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      throw new HttpException(
+        `Lỗi cập nhật review: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async deleteCourseReview(reviewId: string) {
+    try {
+      if (!isUUID(reviewId)) {
+        throw new Error(`Invalid review ID: ${reviewId}`);
+      }
+
+      const deletedReview = await this.prismaService.tbl_course_reviews.delete({
+        where: { reviewId: reviewId },
+      });
+      return {
+        message: `Successfully deleted review`,
+        deletedReview: {
+          reviewId: deletedReview.reviewId,
+          courseId: deletedReview.courseId,
+          userId: deletedReview.userId,
+        },
+      };
+    } catch (error) {
+      if (error.code === 'P2025') {
+        throw new Error(`Review with ID: ${reviewId} not found!`);
+      }
+      throw new Error(`Failed to delete review: ${error.message}`);
+    }
   }
 }
