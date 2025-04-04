@@ -13,8 +13,9 @@ import { VideoService } from 'src/common/services/video.service';
 export class VideoController {
   constructor(private readonly videoService: VideoService) {}
 
-  @Get(':fileName')
+  @Get(':courseId/:fileName')
   async getVideo(
+    @Param('courseId') courseId: string,
     @Param('fileName') fileName: string,
     @Req() req: Request,
     @Res() res: Response,
@@ -24,7 +25,7 @@ export class VideoController {
       return res.status(400).send('Requires Range header');
     }
 
-    const video = this.videoService.getVideo(fileName, range);
+    const video = this.videoService.getVideo(courseId, fileName, range);
 
     if (!video) {
       throw new NotFoundException('Video not found');

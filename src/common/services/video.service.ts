@@ -4,7 +4,7 @@ import * as path from 'path';
 
 @Injectable()
 export class VideoService {
-  private readonly videoPath = path.join(
+  private readonly videoBasePath = path.join(
     __dirname,
     '..',
     '..',
@@ -14,8 +14,8 @@ export class VideoService {
     'videos',
   );
 
-  getVideo(fileName: string, range?: string) {
-    const filePath = path.join(this.videoPath, fileName);
+  getVideo(courseId: string, fileName: string, range?: string) {
+    const filePath = path.join(this.videoBasePath, courseId, fileName);
     console.log('Đang đọc file:', filePath);
 
     if (!fs.existsSync(filePath)) {
@@ -34,7 +34,6 @@ export class VideoService {
       };
     }
 
-    // Xử lý byte-range
     const parts = range.replace(/bytes=/, '').split('-');
     const start = parseInt(parts[0], 10);
     const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
