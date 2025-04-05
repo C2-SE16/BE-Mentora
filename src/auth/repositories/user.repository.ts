@@ -18,8 +18,7 @@ export class UserRepository {
   async createUser(
     email: string,
     hashedPassword: string,
-    firstName: string,
-    lastName: string,
+    fullName: string,
     avatar?: string,
     role: role_enum = role_enum.STUDENT,
   ): Promise<tbl_users> {
@@ -28,8 +27,7 @@ export class UserRepository {
         userId: uuidv4(),
         email,
         password: hashedPassword,
-        firstName,
-        lastName,
+        fullName,
         avatar,
         role,
         createdAt: new Date(),

@@ -67,7 +67,7 @@ export class AuthService {
    * @returns User data and access token
    */
   async register(registerDto: RegisterDto) {
-    const { email, password, firstName, lastName, avatar, role } = registerDto;
+    const { email, password, fullName, avatar, role } = registerDto;
 
     // Check if user already exists
     const existingUser = await this.userRepository.findByEmail(email);
@@ -83,8 +83,7 @@ export class AuthService {
       const newUser = await this.userRepository.createUser(
         email,
         hashedPassword,
-        firstName,
-        lastName,
+        fullName,
         avatar,
         role,
       );
