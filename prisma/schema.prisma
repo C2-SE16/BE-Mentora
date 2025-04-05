@@ -157,8 +157,7 @@ model tbl_users {
   userId                    String                      @id @db.Uuid
   email                     String?                     @db.VarChar
   password                  String?                     @db.VarChar
-  firstName                 String?                     @db.VarChar
-  lastName                  String?                     @db.VarChar
+  fullName                  String?                     @db.VarChar
   avatar                    String?
   role                      role_enum?
   createdAt                 DateTime?                   @db.Timestamp(6)
