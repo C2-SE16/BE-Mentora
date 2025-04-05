@@ -209,8 +209,7 @@ export class CourseService {
           ? {
               userId: review.tbl_users.userId,
               email: review.tbl_users.email,
-              firstName: review.tbl_users.firstName,
-              lastName: review.tbl_users.lastName,
+              fullName: review.tbl_users.fullName,
               avatar: review.tbl_users.avatar,
               role: review.tbl_users.role,
               createdAt: review.tbl_users.createdAt,
@@ -239,8 +238,7 @@ export class CourseService {
               ? {
                   userId: course.tbl_instructors.tbl_users.userId,
                   email: course.tbl_instructors.tbl_users.email,
-                  firstName: course.tbl_instructors.tbl_users.firstName,
-                  lastName: course.tbl_instructors.tbl_users.lastName,
+                  fullName: course.tbl_instructors.tbl_users.fullName,
                   avatar: course.tbl_instructors.tbl_users.avatar,
                   role: course.tbl_instructors.tbl_users.role,
                   createdAt: course.tbl_instructors.tbl_users.createdAt,
@@ -621,7 +619,7 @@ export class CourseService {
         (mentor) =>
           new HomepageMentorEntity({
             id: mentor.instructorId,
-            name: `${mentor.tbl_users?.firstName || ''} ${mentor.tbl_users?.lastName || ''}`.trim(),
+            name: mentor.tbl_users?.fullName || '',
             role: mentor.tbl_users?.role || ROLE.INSTRUCTOR,
             avatar: mentor.profilePicture || mentor.tbl_users?.avatar || '',
             courseCount: mentor.tbl_courses.length,
