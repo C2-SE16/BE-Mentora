@@ -9,7 +9,9 @@ import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
-  constructor(private reflector: Reflector) {
+  constructor(
+    private reflector: Reflector,
+  ) {
     super();
   }
 
@@ -34,6 +36,11 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
         err || new UnauthorizedException('Invalid token or not authenticated')
       );
     }
+
+    if (!user.userId && user.sub) {
+      user.userId = user.sub;
+    }
+
     return user;
   }
 }
