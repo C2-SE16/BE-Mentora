@@ -338,11 +338,13 @@ export class CourseService {
   }
 
   // Phương thức tìm kiếm sử dụng Elasticsearch
-  async searchCourses(searchDto: SearchCourseDto) {
+  async searchCourses(searchDto: SearchCourseDto, userId?: string) {
     const { page = 1, limit = 10 } = searchDto;
 
-    const { total, results } =
-      await this.elasticsearchService.searchCourses(searchDto);
+    const { total, results } = await this.elasticsearchService.searchCourses(
+      searchDto,
+      userId,
+    );
 
     if (results.length === 0) {
       return {

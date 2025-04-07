@@ -39,3 +39,8 @@ export class CreateCourseDto {
   @IsUUID()
   instructorId: string;
 }
+
+export class CreateSearchHistoryDto {
+  @IsNotEmpty()
+  content: string;
+}
