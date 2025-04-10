@@ -338,11 +338,13 @@ export class CourseService {
   }
 
   // Phương thức tìm kiếm sử dụng Elasticsearch
-  async searchCourses(searchDto: SearchCourseDto) {
+  async searchCourses(searchDto: SearchCourseDto, userId?: string) {
     const { page = 1, limit = 10 } = searchDto;
 
-    const { total, results } =
-      await this.elasticsearchService.searchCourses(searchDto);
+    const { total, results } = await this.elasticsearchService.searchCourses(
+      searchDto,
+      userId,
+    );
 
     if (results.length === 0) {
       return {
@@ -384,8 +386,21 @@ export class CourseService {
       .map((id) => courses.find((course) => course.courseId === id))
       .filter(Boolean);
 
+    const formattedCourses = orderedCourses.map((course) => ({
+      ...course,
+      price: course?.price ? Number(course.price) : 0,
+      rating: course?.rating ? Number(Number(course.rating).toFixed(1)) : 0,
+      tbl_instructors: course?.tbl_instructors
+        ? {
+            ...course.tbl_instructors,
+            average_rating: course.tbl_instructors.average_rating
+              ? Number(Number(course.tbl_instructors.average_rating).toFixed(1))
+              : 0,
+          }
+        : null,
+    }));
     return {
-      courses: orderedCourses,
+      courses: formattedCourses,
       total,
       page,
       limit,

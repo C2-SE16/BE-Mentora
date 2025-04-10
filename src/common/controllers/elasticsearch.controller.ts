@@ -6,14 +6,58 @@ import {
   Logger,
   HttpException,
   HttpStatus,
+  UseGuards,
+  Body,
+  Query,
 } from '@nestjs/common';
 import { ElasticsearchService } from '../services/elasticsearch.service';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { UserId } from '../decorators/userid.decorator';
+import { CreateSearchHistoryDto } from '../dto/course.dto';
 
 @Controller('elasticsearch')
 export class ElasticsearchController {
   private readonly logger = new Logger(ElasticsearchController.name);
 
   constructor(private readonly elasticsearchService: ElasticsearchService) {}
+
+  @UseGuards(JwtAuthGuard)
+  @Post('search-history')
+  async getUserSearchHistory(
+    @UserId() userId: string,
+    @Body() createSearchHistoryDto: CreateSearchHistoryDto,
+  ) {
+    try {
+      return await this.elasticsearchService.saveSearchHistory(
+        userId,
+        createSearchHistoryDto.content,
+      );
+    } catch (error) {
+      throw new HttpException(
+        { message: 'Failed to get search history', error: error.message },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('search-history')
+  async getSearchHistory(@UserId() userId: string) {
+    return await this.elasticsearchService.getSearchHistory(userId);
+  }
+
+  @Get('search-suggestions')
+  async getSearchSuggestions(
+    @Query('query') query: string,
+    @Query('limit') limit?: number,
+    @UserId() userId?: string,
+  ) {
+    return await this.elasticsearchService.getSearchSuggestions(
+      query,
+      userId,
+      limit,
+    );
+  }
 
   @Post('recreate-index')
   async recreateIndex() {

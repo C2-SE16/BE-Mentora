@@ -104,6 +104,7 @@ model tbl_favorites {
 model tbl_instructors {
   instructorId   String        @id @db.Uuid
   userId         String?       @db.Uuid
+  instructorName String?       @db.VarChar
   bio            String?
   profilePicture String?       @db.VarChar
   experience     String?
