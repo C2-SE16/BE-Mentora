@@ -74,6 +74,7 @@ async function main() {
     data: {
       instructorId: uuidv4(),
       userId: instructorUser.userId,
+      instructorName: instructorUser.fullName,
       bio: 'Experienced instructor with 10 years of teaching',
       profilePicture: '',
       experience: '10 years of teaching experience',

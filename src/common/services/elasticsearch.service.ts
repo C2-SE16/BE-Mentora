@@ -277,6 +277,7 @@ export class ElasticsearchService {
           title: course.title,
           description: course.description,
           overview: course.overview,
+          instructorName: course.tbl_instructors?.instructorName,
           price: course.price ? parseFloat(course.price.toString()) : null,
           rating: course.rating ? parseFloat(course.rating.toString()) : null,
           isBestSeller: course.isBestSeller,
