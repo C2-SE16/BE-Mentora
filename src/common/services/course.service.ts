@@ -151,6 +151,10 @@ export class CourseService {
       where: { courseId: courseId },
       include: {
         tbl_course_reviews: {
+          take: 4,
+          orderBy: {
+            createdAt: 'desc',
+          },
           include: {
             tbl_users: true,
           },
