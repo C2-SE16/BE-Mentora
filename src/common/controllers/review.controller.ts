@@ -9,6 +9,8 @@ import {
   Put,
   Delete,
   Param,
+  Get,
+  Query,
 } from '@nestjs/common';
 import { ReviewService } from 'src/common/services/review.service';
 import { CreateReviewDto } from 'src/common/dto/comment.dto';
@@ -61,6 +63,26 @@ export class ReviewController {
     } catch (error) {
       throw new HttpException(
         'Error deleting review',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('course/:courseId')
+  async getReviewsFromCourseId(
+    @Param('courseId') courseId: string,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+  ) {
+    try {
+      return await this.reviewService.getAllReviewFromCourseId(
+        courseId,
+        Number(page),
+        Number(limit),
+      );
+    } catch (error) {
+      throw new HttpException(
+        'Error getting reviews',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

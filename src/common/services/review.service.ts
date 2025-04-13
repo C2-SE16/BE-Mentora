@@ -87,4 +87,58 @@ export class ReviewService {
       throw new Error(`Failed to delete review: ${error.message}`);
     }
   }
+
+  async getAllReviewFromCourseId(
+    courseId: string,
+    page: number = 1,
+    limit: number = 10,
+  ) {
+    try {
+      const skip = (page - 1) * limit;
+
+      const [rawReviews, total] = await this.prismaService.$transaction([
+        this.prismaService.tbl_course_reviews.findMany({
+          where: { courseId },
+          skip,
+          take: limit,
+          orderBy: { createdAt: 'desc' },
+          include: {
+            tbl_users: true,
+          },
+        }),
+        this.prismaService.tbl_course_reviews.count({
+          where: { courseId },
+        }),
+      ]);
+
+      const reviews = rawReviews.map((review) => ({
+        ...review,
+        rating: review.rating ? Number(review.rating) : 0,
+        tbl_users: {
+          ...review.tbl_users,
+          password: undefined,
+          role: undefined,
+        },
+      }));
+
+      const ratingCount = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+
+      for (const { rating } of reviews) {
+        const rt = Number(rating);
+        if (rt >= 1 && rt <= 5) {
+          ratingCount[rt]++;
+        }
+      }
+
+      return {
+        reviews,
+        total,
+        currentPage: page,
+        totalPages: Math.ceil(total / limit),
+        ratingCount,
+      };
+    } catch (error) {
+      throw new Error('Failed to fetch reviews');
+    }
+  }
 }
