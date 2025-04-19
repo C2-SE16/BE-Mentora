@@ -13,9 +13,9 @@ import { ElasticsearchController } from './common/controllers/elasticsearch.cont
 import { ModuleModule } from './common/modules/module.module';
 import { CurriculumModule } from './common/modules/curriculum.module';
 import { LectureModule } from './common/modules/lecture.module';
-import { UploadImageModule } from './common/modules/upload-image.module';
 import { RedisModule } from './common/cache/redis.module';
 import { RedisExampleController } from './common/controllers/redis-example.controller';
+import { UploadImageModule } from './common/modules/upload-image.module';
 
 @Module({
   imports: [
@@ -33,6 +33,7 @@ import { RedisExampleController } from './common/controllers/redis-example.contr
     ModuleModule,
     CurriculumModule,
     LectureModule,
+    RedisModule,
     UploadImageModule,
     RedisModule,
   ],
