@@ -13,6 +13,7 @@ import { ElasticsearchController } from './common/controllers/elasticsearch.cont
 import { ModuleModule } from './common/modules/module.module';
 import { CurriculumModule } from './common/modules/curriculum.module';
 import { LectureModule } from './common/modules/lecture.module';
+import { UploadImageModule } from './common/modules/upload-image.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -29,6 +30,7 @@ import { LectureModule } from './common/modules/lecture.module';
     ModuleModule,
     CurriculumModule,
     LectureModule,
+    UploadImageModule,
   ],
   controllers: [ElasticsearchController],
   providers: [

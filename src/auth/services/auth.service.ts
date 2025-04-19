@@ -33,13 +33,13 @@ export class AuthService {
     // Find user by email
     const user = await this.userRepository.findByEmail(email);
     if (!user || !user.password) {
-      throw new UnauthorizedException('Invalid email or password');
+      throw new UnauthorizedException('Sai tài khoản hoặc mật khẩu');
     }
 
     // Verify password
     const isPasswordValid = await comparePassword(password, user.password);
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid email or password');
+      throw new UnauthorizedException('Sai tài khoản hoặc mật khẩu');
     }
 
     // Generate JWT token
