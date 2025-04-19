@@ -14,6 +14,9 @@ import { ModuleModule } from './common/modules/module.module';
 import { CurriculumModule } from './common/modules/curriculum.module';
 import { LectureModule } from './common/modules/lecture.module';
 import { UploadImageModule } from './common/modules/upload-image.module';
+import { RedisModule } from './common/cache/redis.module';
+import { RedisExampleController } from './common/controllers/redis-example.controller';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -31,8 +34,9 @@ import { UploadImageModule } from './common/modules/upload-image.module';
     CurriculumModule,
     LectureModule,
     UploadImageModule,
+    RedisModule,
   ],
-  controllers: [ElasticsearchController],
+  controllers: [ElasticsearchController, RedisExampleController],
   providers: [
     { provide: APP_INTERCEPTOR, useClass: ClassSerializerInterceptor },
   ],
