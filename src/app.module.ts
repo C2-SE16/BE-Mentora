@@ -16,6 +16,7 @@ import { LectureModule } from './common/modules/lecture.module';
 import { RedisModule } from './common/cache/redis.module';
 import { RedisExampleController } from './common/controllers/redis-example.controller';
 import { UploadImageModule } from './common/modules/upload-image.module';
+import { CartModule } from './common/modules/cart.module';
 
 @Module({
   imports: [
@@ -35,7 +36,7 @@ import { UploadImageModule } from './common/modules/upload-image.module';
     LectureModule,
     RedisModule,
     UploadImageModule,
-    RedisModule,
+    CartModule,
   ],
   controllers: [ElasticsearchController, RedisExampleController],
   providers: [
