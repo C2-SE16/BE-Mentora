@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Post,
+  Req,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -83,6 +84,53 @@ export class UploadImageController {
     } catch (error) {
       throw new BadRequestException(
         `Failed to upload base64 image: ${error.message}`,
+      );
+    }
+  }
+
+  @Post('avatar')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: {
+        fileSize: 1024 * 1024 * 5, // 5MB
+      },
+      fileFilter: (req, file, cb) => {
+        if (!file.mimetype.match(/image\/(jpeg|png|jpg|webp)/)) {
+          return cb(
+            new BadRequestException(
+              'Chỉ chấp nhận file hình ảnh (JPEG, PNG, JPG, WEBP)',
+            ),
+            false,
+          );
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  async uploadAvatarProfile(
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req,
+  ) {
+    const userId = req.user.userId;
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+
+    try {
+      const result = await this.cloudinaryService.uploadProfileImage(
+        file,
+        userId,
+      );
+
+      return {
+        success: true,
+        message: 'Upload ảnh hồ sơ thành công',
+        data: result,
+      };
+    } catch (error) {
+      throw new BadRequestException(
+        `Failed to upload avatar profile: ${error.message}`,
       );
     }
   }

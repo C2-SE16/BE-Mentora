@@ -161,8 +161,14 @@ model tbl_users {
   fullName                  String?                     @db.VarChar
   avatar                    String?
   role                      role_enum?
+  title                     String?                     @db.VarChar
+  description               String?                     @db.VarChar
   createdAt                 DateTime?                   @db.Timestamp(6)
   updatedAt                 DateTime?                   @db.Timestamp(6)
+  websiteLink               String?                     @db.VarChar
+  facebookLink              String?                     @db.VarChar
+  youtubeLink               String?                     @db.VarChar
+  linkedinLink              String?                     @db.VarChar
   tbl_cart                  tbl_cart[]
   tbl_course_enrollments    tbl_course_enrollments[]
   tbl_course_reviews        tbl_course_reviews[]
