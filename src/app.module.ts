@@ -17,6 +17,7 @@ import { RedisModule } from './common/cache/redis.module';
 import { RedisExampleController } from './common/controllers/redis-example.controller';
 import { UploadImageModule } from './common/modules/upload-image.module';
 import { CartModule } from './common/modules/cart.module';
+import { UserModule } from './common/modules/user.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { CartModule } from './common/modules/cart.module';
     RedisModule,
     UploadImageModule,
     CartModule,
+    UserModule,
   ],
   controllers: [ElasticsearchController, RedisExampleController],
   providers: [

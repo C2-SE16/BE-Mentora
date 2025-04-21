@@ -18,17 +18,7 @@ import { formatDate } from '../utils/formatDate.util';
 import { ElasticsearchService } from './elasticsearch.service';
 import { SearchCourseDto } from '../dto/search-course.dto';
 import { CourseSearchResult } from '../interfaces/course.interface';
-interface SearchCourseParams {
-  query?: string;
-  page?: number;
-  limit?: number;
-  minRating?: number;
-  categoryId?: string;
-  sortBy?: string;
-  sortOrder?: string;
-  minPrice?: number;
-  maxPrice?: number;
-}
+
 @Injectable()
 export class CourseService {
   constructor(
