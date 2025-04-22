@@ -19,7 +19,7 @@ import { UploadImageModule } from './common/modules/upload-image.module';
 import { FavoriteModule } from 'src/common/modules/favorite.module';
 import { CartModule } from './common/modules/cart.module';
 import { UserModule } from './common/modules/user.module';
-
+import { InstructorModule } from './common/modules/instructor.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -36,12 +36,15 @@ import { UserModule } from './common/modules/user.module';
     ModuleModule,
     CurriculumModule,
     LectureModule,
+    CurriculumModule,
+    LectureModule,
     RedisModule,
     UploadImageModule,
     RedisModule,
     FavoriteModule,
     CartModule,
     UserModule,
+    InstructorModule,
   ],
   controllers: [ElasticsearchController, RedisExampleController],
   providers: [
