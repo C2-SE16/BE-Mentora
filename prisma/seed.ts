@@ -544,6 +544,19 @@ async function main() {
       categoryId: itCategory.categoryId,
     },
     {
+      title: 'Python cho người mới bắt đầu',
+      description: 'Học Python từ cơ bản đến nâng cao',
+      overview:
+        'Học cách sử dụng thư viện pandas, numpy, matplotlib và seaborn cho phân tích dữ liệu',
+      durationTime: 3300, // 55 hours
+      price: 109.99,
+      thumbnail:
+        'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?q=80&w=2069&auto=format&fit=crop&ixlib=rb-4.0.3',
+      isBestSeller: true,
+      isRecommended: false,
+      categoryId: itCategory.categoryId,
+    },
+    {
       title: 'Digital Advertising và Facebook Ads',
       description: 'Chiến lược quảng cáo trên nền tảng Meta hiệu quả',
       overview:

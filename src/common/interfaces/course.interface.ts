@@ -19,6 +19,7 @@ export interface SearchHistoryDocument {
   content: string;
   searchCount: number;
   updatedAt: Date;
+  courseId?: string;
 }
 
 export interface SearchStatsDocument {

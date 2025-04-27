@@ -47,6 +47,7 @@ export class ElasticsearchController {
   }
 
   @Get('search-suggestions')
+  @UseGuards(JwtAuthGuard)
   async getSearchSuggestions(
     @Query('query') query: string,
     @Query('limit') limit?: number,
@@ -57,6 +58,11 @@ export class ElasticsearchController {
       userId,
       limit,
     );
+  }
+
+  @Get('popular-searches')
+  async getPopularSearches(@Query('limit') limit?: number) {
+    return await this.elasticsearchService.getPopularSearches(limit);
   }
 
   @Post('recreate-index')
