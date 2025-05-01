@@ -172,6 +172,8 @@ model tbl_users {
   isEmailVerified           Boolean?                    @default(false)
   verificationEmailToken    String?                     @db.VarChar
   verificationEmailTokenExp DateTime?                   @db.Timestamp(6)
+  resetPasswordToken        String?                     @db.VarChar
+  resetPasswordTokenExp     DateTime?                   @db.Timestamp(6)
   tbl_cart                  tbl_cart[]
   tbl_course_enrollments    tbl_course_enrollments[]
   tbl_course_reviews        tbl_course_reviews[]
