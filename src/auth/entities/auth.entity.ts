@@ -46,3 +46,12 @@ export class LogoutResponseEntity {
     Object.assign(this, partial);
   }
 }
+
+export class PasswordResetResponseEntity {
+  message: string;
+  success: boolean;
+
+  constructor(partial: Partial<PasswordResetResponseEntity>) {
+    Object.assign(this, partial);
+  }
+}

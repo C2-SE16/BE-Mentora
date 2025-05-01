@@ -12,18 +12,24 @@ import { comparePassword, hashPassword } from '../../common/utils/hash.util';
 import {
   LoginResponseEntity,
   LogoutResponseEntity,
+  PasswordResetResponseEntity,
   RegisterResponseEntity,
   UserEntity,
 } from '../entities/auth.entity';
 import { EmailService } from 'src/common/services/email.service';
 import { ConfigService } from '@nestjs/config';
-import { randomBytes } from 'crypto';
 import {
   ResendVerificationDto,
   VerifyEmailDto,
 } from 'src/common/dto/email-verification.dto';
 import { EmailVerificationResponseEntity } from 'src/entities/email-verification.entity';
 import { PrismaService } from 'src/common/prisma/prisma.service';
+import {
+  ChangePasswordDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
+} from '../dto/password.dto';
+import { generateVerificationToken } from 'src/common/utils/generateVerificationToken.util';
 
 @Injectable()
 export class AuthService {
@@ -93,7 +99,7 @@ export class AuthService {
       throw new ConflictException('Email đã được sử dụng');
     }
 
-    const verificationToken = this.generateVerificationToken();
+    const verificationToken = generateVerificationToken();
     const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     try {
@@ -204,7 +210,7 @@ export class AuthService {
       throw new BadRequestException('Email not found or already verified');
     }
 
-    const verificationToken = this.generateVerificationToken();
+    const verificationToken = generateVerificationToken();
     const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     await this.prisma.tbl_users.update({
@@ -225,7 +231,105 @@ export class AuthService {
     });
   }
 
-  private generateVerificationToken() {
-    return randomBytes(32).toString('hex');
+  async forgotPassword(
+    forgotPasswordDto: ForgotPasswordDto,
+  ): Promise<PasswordResetResponseEntity> {
+    const { email } = forgotPasswordDto;
+
+    const user = await this.userRepository.findByEmail(email);
+
+    if (!user) {
+      return new PasswordResetResponseEntity({
+        message: 'Email không tồn tại',
+        success: false,
+      });
+    }
+
+    const resetToken = generateVerificationToken();
+    const resetTokenExpiry = new Date(Date.now() + 1 * 60 * 60 * 1000); // 1 giờ
+
+    await this.prisma.tbl_users.update({
+      where: { userId: user.userId },
+      data: {
+        resetPasswordToken: resetToken,
+        resetPasswordTokenExp: resetTokenExpiry,
+      },
+    });
+
+    await this.emailService.sendResetPasswordEmail(email, resetToken);
+
+    return new PasswordResetResponseEntity({
+      message: 'Email đã được gửi đến bạn',
+      success: true,
+    });
+  }
+
+  async resetPassword(
+    resetPasswordDto: ResetPasswordDto,
+  ): Promise<PasswordResetResponseEntity> {
+    const { token, password } = resetPasswordDto;
+
+    const user = await this.prisma.tbl_users.findFirst({
+      where: {
+        resetPasswordToken: token,
+        resetPasswordTokenExp: {
+          gte: new Date(),
+        },
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Token không hợp lệ hoặc đã hết hạn');
+    }
+
+    const hashedPassword = await hashPassword(password);
+
+    await this.prisma.tbl_users.update({
+      where: { userId: user.userId },
+      data: {
+        password: hashedPassword,
+        resetPasswordToken: null,
+        resetPasswordTokenExp: null,
+      },
+    });
+
+    return new PasswordResetResponseEntity({
+      message: 'Mật khẩu đã được đặt lại thành công',
+      success: true,
+    });
+  }
+
+  async changePassword(
+    userId: string,
+    changePasswordDto: ChangePasswordDto,
+  ): Promise<PasswordResetResponseEntity> {
+    const { currentPassword, newPassword } = changePasswordDto;
+
+    const user = await this.prisma.tbl_users.findUnique({
+      where: { userId },
+    });
+
+    const isPasswordValid = await comparePassword(
+      currentPassword,
+      user?.password || '',
+    );
+
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Mật khẩu hiện tại không chính xác');
+    }
+
+    const hashedPassword = await hashPassword(newPassword);
+
+    await this.prisma.tbl_users.update({
+      where: { userId },
+      data: {
+        password: hashedPassword,
+      },
+    });
+
+    return new PasswordResetResponseEntity({
+      message: 'Mật khẩu đã được cập nhật thành công',
+      success: true,
+    });
   }
 }

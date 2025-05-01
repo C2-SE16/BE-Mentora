@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Transporter } from 'nodemailer';
 import * as nodemailer from 'nodemailer';
@@ -19,7 +19,7 @@ export class EmailService {
 
   async sendVerificationEmail(email: string, token: string) {
     const appUrl = this.configService.get<string>('APP_URL');
-    const verificationUrl = `${appUrl}/auth/verify-email?token=${token}`;
+    const verificationUrl = `${appUrl}/verify-email?token=${token}`;
 
     await this.transporter.sendMail({
       from: `"Mentora" <${this.configService.get<string>('EMAIL_USER')}>`,
@@ -50,5 +50,34 @@ export class EmailService {
         </div>
       `,
     });
+  }
+
+  async sendResetPasswordEmail(email: string, resetToken: string) {
+    const baseUrl = this.configService.get<string>('APP_URL');
+    const resetPasswordUrl = `${baseUrl}/reset-password?token=${resetToken}`;
+
+    const mailOptions = {
+      to: email,
+      subject: 'Đặt lại mật khẩu cho tài khoản Mentora',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2>Đặt lại mật khẩu</h2>
+          <p>Bạn nhận được email này vì đã yêu cầu đặt lại mật khẩu cho tài khoản Mentora.</p>
+          <p>Vui lòng nhấp vào liên kết dưới đây để đặt lại mật khẩu. Liên kết này sẽ hết hạn sau 1 giờ.</p>
+          <a href="${resetPasswordUrl}" style="display: inline-block; padding: 10px 20px; background-color: #1dbe70; color: white; text-decoration: none; border-radius: 5px;">Đặt lại mật khẩu</a>
+          <p>Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
+          <p>Trân trọng,<br>Đội ngũ Mentora</p>
+        </div>
+      `,
+    };
+
+    try {
+      await this.transporter.sendMail(mailOptions);
+      return true;
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Failed to send reset password email',
+      );
+    }
   }
 }
