@@ -16,6 +16,10 @@ import { LectureModule } from './common/modules/lecture.module';
 import { RedisModule } from './common/cache/redis.module';
 import { RedisExampleController } from './common/controllers/redis-example.controller';
 import { UploadImageModule } from './common/modules/upload-image.module';
+import { FavoriteModule } from 'src/common/modules/favorite.module';
+import { CartModule } from './common/modules/cart.module';
+import { UserModule } from './common/modules/user.module';
+import { InstructorModule } from './common/modules/instructor.module';
 import { QuizAttemptModule } from 'src/common/modules/quiz-attempts.module';
 import { QuizzModule } from 'src/common/modules/quizz.module';
 import { QuestionModule } from 'src/common/modules/question.module';
@@ -36,12 +40,18 @@ import { QuestionModule } from 'src/common/modules/question.module';
     ModuleModule,
     CurriculumModule,
     LectureModule,
+    CurriculumModule,
+    LectureModule,
     RedisModule,
     UploadImageModule,
     RedisModule,
     QuizAttemptModule,
     QuizzModule,
     QuestionModule,
+    FavoriteModule,
+    CartModule,
+    UserModule,
+    InstructorModule,
   ],
   controllers: [ElasticsearchController, RedisExampleController],
   providers: [

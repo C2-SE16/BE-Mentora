@@ -20,6 +20,9 @@ export class UserRepository {
     hashedPassword: string,
     fullName: string,
     avatar?: string,
+    isEmailVerified?: boolean,
+    verificationEmailToken?: string,
+    verificationEmailTokenExp?: Date,
     role: role_enum = role_enum.STUDENT,
   ): Promise<tbl_users> {
     return this.prisma.tbl_users.create({
@@ -30,6 +33,9 @@ export class UserRepository {
         fullName,
         avatar,
         role,
+        isEmailVerified,
+        verificationEmailToken,
+        verificationEmailTokenExp,
         createdAt: new Date(),
         updatedAt: new Date(),
       },

@@ -18,17 +18,7 @@ import { formatDate } from '../utils/formatDate.util';
 import { ElasticsearchService } from './elasticsearch.service';
 import { SearchCourseDto } from '../dto/search-course.dto';
 import { CourseSearchResult } from '../interfaces/course.interface';
-interface SearchCourseParams {
-  query?: string;
-  page?: number;
-  limit?: number;
-  minRating?: number;
-  categoryId?: string;
-  sortBy?: string;
-  sortOrder?: string;
-  minPrice?: number;
-  maxPrice?: number;
-}
+
 @Injectable()
 export class CourseService {
   constructor(
@@ -58,12 +48,95 @@ export class CourseService {
     return this.prismaService.tbl_courses.findMany();
   }
 
-  getCourseById(courseId: string) {
-    return this.prismaService.tbl_courses.findUnique({
+  async getCourseById(courseId: string) {
+    const course = await this.prismaService.tbl_courses.findUnique({
       where: {
         courseId: courseId,
       },
+      include: {
+        tbl_course_categories: {
+          include: {
+            tbl_categories: true,
+          },
+        },
+        tbl_instructors: {
+          include: {
+            tbl_users: true,
+          },
+        },
+        tbl_course_reviews: {
+          include: {
+            tbl_users: true,
+          },
+        },
+      },
     });
+
+    if (!course) return null;
+
+    return {
+      courseId: course.courseId,
+      title: course.title,
+      description: course.description,
+      overview: course.overview,
+      durationTime: course.durationTime,
+      price: course.price ? Number(course.price) : 0,
+      approved: course.approved,
+      rating: course.rating ? Number(course.rating) : 0,
+      comment: course.comment,
+      createdAt: course.createdAt,
+      updatedAt: course.updatedAt,
+      thumbnail: course.thumbnail,
+      categories: course.tbl_course_categories.map((category) => ({
+        categoryId: category.categoryId,
+        courseId: category.courseId,
+      })),
+      instructor: course.tbl_instructors
+        ? {
+            instructorId: course.tbl_instructors.instructorId,
+            userId: course.tbl_instructors.userId,
+            bio: course.tbl_instructors.bio,
+            profilePicture: course.tbl_instructors.profilePicture,
+            experience: course.tbl_instructors.experience,
+            averageRating: course.tbl_instructors.average_rating
+              ? Number(course.tbl_instructors.average_rating)
+              : 0,
+            isVerified: course.tbl_instructors.isVerified,
+            createdAt: course.tbl_instructors.createdAt,
+            updatedAt: course.tbl_instructors.updatedAt,
+            user: course.tbl_instructors.tbl_users
+              ? {
+                  userId: course.tbl_instructors.tbl_users.userId,
+                  email: course.tbl_instructors.tbl_users.email,
+                  fullName: course.tbl_instructors.tbl_users.fullName,
+                  avatar: course.tbl_instructors.tbl_users.avatar,
+                  role: course.tbl_instructors.tbl_users.role,
+                  createdAt: course.tbl_instructors.tbl_users.createdAt,
+                  updatedAt: course.tbl_instructors.tbl_users.updatedAt,
+                }
+              : null,
+          }
+        : null,
+      reviews: course.tbl_course_reviews.map((review) => ({
+        reviewId: review.reviewId,
+        courseId: review.courseId,
+        user: review.tbl_users
+          ? {
+              userId: review.tbl_users.userId,
+              email: review.tbl_users.email,
+              fullName: review.tbl_users.fullName,
+              avatar: review.tbl_users.avatar,
+              role: review.tbl_users.role,
+              createdAt: review.tbl_users.createdAt,
+              updatedAt: review.tbl_users.updatedAt,
+            }
+          : null,
+        rating: review.rating ? Number(review.rating) : 0,
+        comment: review.comment,
+        createdAt: review.createdAt,
+        updatedAt: review.updatedAt,
+      })),
+    };
   }
 
   updateCourse(courseId: string, body: CreateCourseDto) {

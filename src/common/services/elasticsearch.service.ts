@@ -168,9 +168,39 @@ export class ElasticsearchService {
     const from = (page - 1) * limit;
     const mustClauses: any[] = [];
     const shouldClauses: any[] = [];
+
     if (query) {
       const queryWithSpaces = query.trim();
       const queryWithoutSpaces = queryWithSpaces.replace(/\s+/g, '');
+
+      const queryTerms = queryWithSpaces
+        .split(/\s+/)
+        .filter((term) => term.length > 1);
+
+      if (queryTerms.length > 0) {
+        queryTerms.forEach((term) => {
+          shouldClauses.push(
+            {
+              match: {
+                title: {
+                  query: term,
+                  boost: 2.0,
+                  operator: 'or',
+                },
+              },
+            },
+            {
+              match: {
+                description: {
+                  query: term,
+                  boost: 1.0,
+                  operator: 'or',
+                },
+              },
+            },
+          );
+        });
+      }
 
       shouldClauses.push(
         // Exact match với boost cao nhất
@@ -188,7 +218,7 @@ export class ElasticsearchService {
             title: {
               query: queryWithSpaces,
               boost: 8.0,
-              slop: 1,
+              slop: 2,
             },
           },
         },
@@ -208,6 +238,7 @@ export class ElasticsearchService {
               query: queryWithSpaces,
               fuzziness: 'AUTO',
               boost: 4.0,
+              operator: 'or',
             },
           },
         },
@@ -216,9 +247,19 @@ export class ElasticsearchService {
           multi_match: {
             query: queryWithSpaces,
             fields: ['title^3', 'description^2', 'overview'],
-            type: 'best_fields',
-            fuzziness: 'AUTO',
+            type: 'cross_fields',
+            operator: 'or',
             boost: 2.0,
+          },
+        },
+        {
+          multi_match: {
+            query: queryWithSpaces,
+            fields: ['title^2', 'description', 'overview'],
+            type: 'best_fields',
+            operator: 'or',
+            fuzziness: 'AUTO',
+            boost: 1.5,
           },
         },
       );
@@ -231,14 +272,68 @@ export class ElasticsearchService {
 
     if (shouldClauses.length > 0) {
       queryBody.bool.should = shouldClauses;
-      queryBody.bool.minimum_should_match = 1;
+      queryBody.bool.minimum_should_match = 1; // Giữ nguyên 1
     }
 
     if (mustClauses.length > 0) {
       queryBody.bool.must = mustClauses;
     }
 
+    if (
+      searchDto.categoryId ||
+      searchDto.minPrice !== undefined ||
+      searchDto.maxPrice !== undefined ||
+      searchDto.minRating !== undefined ||
+      searchDto.isBestSeller !== undefined ||
+      searchDto.isRecommended !== undefined
+    ) {
+      queryBody.bool.filter = [];
+
+      if (searchDto.categoryId) {
+        queryBody.bool.filter.push({
+          term: { categories: searchDto.categoryId },
+        });
+      }
+
+      if (
+        searchDto.minPrice !== undefined ||
+        searchDto.maxPrice !== undefined
+      ) {
+        const rangeFilter: any = { range: { price: {} } };
+        if (searchDto.minPrice !== undefined)
+          rangeFilter.range.price.gte = searchDto.minPrice;
+        if (searchDto.maxPrice !== undefined)
+          rangeFilter.range.price.lte = searchDto.maxPrice;
+        queryBody.bool.filter.push(rangeFilter);
+      }
+
+      if (searchDto.minRating !== undefined) {
+        queryBody.bool.filter.push({
+          range: { rating: { gte: searchDto.minRating } },
+        });
+      }
+
+      if (searchDto.isBestSeller !== undefined) {
+        queryBody.bool.filter.push({
+          term: { isBestSeller: searchDto.isBestSeller },
+        });
+      }
+
+      if (searchDto.isRecommended !== undefined) {
+        queryBody.bool.filter.push({
+          term: { isRecommended: searchDto.isRecommended },
+        });
+      }
+    }
+
     let sortConfig: any[] = [];
+
+    // Thêm sắp xếp
+    if (searchDto.sortBy) {
+      sortConfig.push({
+        [searchDto.sortBy]: { order: searchDto.sortOrder || 'desc' },
+      });
+    }
 
     try {
       const { hits } = await this.elasticsearchService.search({
@@ -508,11 +603,84 @@ export class ElasticsearchService {
           suggestions: [],
         };
       }
-
       const normalizedQuery = query.trim().toLowerCase();
-      const suggestions = new Set<string>();
+      const suggestions = new Map<
+        string,
+        { content: string; type: string; score: number }
+      >();
+      const coursesResponse = await this.elasticsearchService.search({
+        index: this.indexName,
+        body: {
+          query: {
+            bool: {
+              should: [
+                {
+                  prefix: {
+                    title: {
+                      value: normalizedQuery,
+                      boost: 10.0,
+                    },
+                  },
+                },
+                {
+                  match_phrase_prefix: {
+                    title: {
+                      query: normalizedQuery,
+                      boost: 5.0,
+                      max_expansions: 10,
+                    },
+                  },
+                },
+                {
+                  wildcard: {
+                    title: {
+                      value: `*${normalizedQuery}*`,
+                      boost: 2.0,
+                    },
+                  },
+                },
+                {
+                  match: {
+                    description: {
+                      query: normalizedQuery,
+                      boost: 1.0,
+                    },
+                  },
+                },
+              ],
+              minimum_should_match: 1,
+            },
+          },
+          _source: ['title'],
+          size: limit * 2,
+          highlight: {
+            fields: {
+              title: {
+                pre_tags: [''],
+                post_tags: [''],
+                fragment_size: 100,
+                number_of_fragments: 1,
+              },
+            },
+          },
+        },
+      });
+      
+      coursesResponse.hits.hits.forEach((hit) => {
+        const source = hit._source as any;
+        const score = hit._score || 0;
 
-      if (userId) {
+        if (source.title) {
+          const title = (hit.highlight?.title?.[0] || source.title) as string;
+          suggestions.set(title.toLowerCase(), {
+            content: title,
+            type: 'course',
+            score,
+          });
+        }
+      });
+
+      if (userId && suggestions.size < limit * 2) {
         const userHistoryResponse = await this.elasticsearchService.search({
           index: this.historyIndexName,
           body: {
@@ -523,54 +691,152 @@ export class ElasticsearchService {
                   {
                     bool: {
                       should: [
-                        { prefix: { 'content.keyword': normalizedQuery } },
-                        { match_phrase_prefix: { content: normalizedQuery } },
+                        {
+                          prefix: {
+                            content: {
+                              value: normalizedQuery,
+                              boost: 8.0,
+                            },
+                          },
+                        },
+                        {
+                          match_phrase_prefix: {
+                            content: {
+                              query: normalizedQuery,
+                              boost: 4.0,
+                            },
+                          },
+                        },
+                        {
+                          wildcard: {
+                            content: `*${normalizedQuery}*`,
+                          },
+                        },
                       ],
+                      minimum_should_match: 1,
                     },
                   },
                 ],
               },
             },
           },
-          sort: [{ searchCount: { order: 'desc' } }],
-          size: 3,
+          sort: [
+            { searchCount: { order: 'desc' } },
+            { _score: { order: 'desc' } },
+          ],
+          size: limit,
         });
 
         userHistoryResponse.hits.hits.forEach((hit) => {
           const source = hit._source as SearchHistoryDocument;
-          suggestions.add(source.content);
+          const score = hit._score || 0;
+
+          if (source.content) {
+            suggestions.set(source.content.toLowerCase(), {
+              content: source.content,
+              type: 'history',
+              score: score + (source.searchCount || 0) * 0.5,
+            });
+          }
         });
       }
 
-      if (suggestions.size < limit) {
+      if (suggestions.size < limit * 2) {
         const statsResponse = await this.elasticsearchService.search({
           index: this.statsIndexName,
           body: {
             query: {
               bool: {
                 should: [
-                  { prefix: { 'content.keyword': normalizedQuery } },
-                  { match_phrase_prefix: { content: normalizedQuery } },
+                  {
+                    prefix: {
+                      content: {
+                        value: normalizedQuery,
+                        boost: 6.0,
+                      },
+                    },
+                  },
+                  {
+                    match_phrase_prefix: {
+                      content: {
+                        query: normalizedQuery,
+                        boost: 3.0,
+                      },
+                    },
+                  },
+                  { wildcard: { content: `*${normalizedQuery}*` } },
                 ],
+                minimum_should_match: 1,
               },
             },
             sort: [{ totalSearchCount: { order: 'desc' } }],
-            size: limit - suggestions.size,
+            size: limit,
           },
         });
 
         statsResponse.hits.hits.forEach((hit) => {
           const source = hit._source as SearchStatsDocument;
-          suggestions.add(source.content);
+          const score = hit._score || 0;
+
+          if (source.content) {
+            suggestions.set(source.content.toLowerCase(), {
+              content: source.content,
+              type: 'popular',
+              score: score + (source.totalSearchCount || 0) * 0.3,
+            });
+          }
         });
       }
 
-      const results = Array.from(suggestions)
-        .slice(0, limit)
-        .map((content) => ({
-          content,
-          type: userId ? 'history' : 'suggestion',
-        }));
+      if (suggestions.size === 0) {
+        const popularCoursesResponse = await this.elasticsearchService.search({
+          index: this.indexName,
+          body: {
+            query: { match_all: {} },
+            sort: [{ rating: { order: 'desc' } }],
+            _source: ['title'],
+            size: limit,
+          },
+        });
+
+        popularCoursesResponse.hits.hits.forEach((hit) => {
+          const source = hit._source as any;
+          if (source.title) {
+            suggestions.set(source.title.toLowerCase(), {
+              content: source.title,
+              type: 'popular_course',
+              score: 1,
+            });
+          }
+        });
+      }
+
+      let resultArray = Array.from(suggestions.values());
+
+      resultArray.sort((a, b) => {
+        const aStartsWithQuery = a.content
+          .toLowerCase()
+          .startsWith(normalizedQuery)
+          ? 1
+          : 0;
+        const bStartsWithQuery = b.content
+          .toLowerCase()
+          .startsWith(normalizedQuery)
+          ? 1
+          : 0;
+
+        if (aStartsWithQuery !== bStartsWithQuery) {
+          return bStartsWithQuery - aStartsWithQuery;
+        }
+
+        // order base on score
+        return b.score - a.score;
+      });
+
+      const results = resultArray.slice(0, limit).map((item) => ({
+        content: item.content,
+        type: item.type,
+      }));
 
       return { suggestions: results };
     } catch (error) {
