@@ -16,6 +16,9 @@ import { LectureModule } from './common/modules/lecture.module';
 import { RedisModule } from './common/cache/redis.module';
 import { RedisExampleController } from './common/controllers/redis-example.controller';
 import { UploadImageModule } from './common/modules/upload-image.module';
+import { QuizAttemptModule } from 'src/common/modules/quiz-attempts.module';
+import { QuizzModule } from 'src/common/modules/quizz.module';
+import { QuestionModule } from 'src/common/modules/question.module';
 
 @Module({
   imports: [
@@ -36,6 +39,9 @@ import { UploadImageModule } from './common/modules/upload-image.module';
     RedisModule,
     UploadImageModule,
     RedisModule,
+    QuizAttemptModule,
+    QuizzModule,
+    QuestionModule,
   ],
   controllers: [ElasticsearchController, RedisExampleController],
   providers: [
