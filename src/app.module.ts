@@ -20,6 +20,10 @@ import { FavoriteModule } from 'src/common/modules/favorite.module';
 import { CartModule } from './common/modules/cart.module';
 import { UserModule } from './common/modules/user.module';
 import { InstructorModule } from './common/modules/instructor.module';
+import { QuizAttemptModule } from 'src/common/modules/quiz-attempts.module';
+import { QuizzModule } from 'src/common/modules/quizz.module';
+import { QuestionModule } from 'src/common/modules/question.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -41,6 +45,9 @@ import { InstructorModule } from './common/modules/instructor.module';
     RedisModule,
     UploadImageModule,
     RedisModule,
+    QuizAttemptModule,
+    QuizzModule,
+    QuestionModule,
     FavoriteModule,
     CartModule,
     UserModule,
