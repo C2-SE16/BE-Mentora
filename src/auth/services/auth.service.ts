@@ -30,6 +30,7 @@ import {
   ResetPasswordDto,
 } from '../dto/password.dto';
 import { generateVerificationToken } from 'src/common/utils/generateVerificationToken.util';
+import { tbl_users } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -101,13 +102,14 @@ export class AuthService {
 
     const verificationToken = generateVerificationToken();
     const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    let newUser: tbl_users | null = null;
 
     try {
       // Hash the password
       const hashedPassword = await hashPassword(password);
 
       // Create new user
-      const newUser = await this.userRepository.createUser(
+      newUser = await this.userRepository.createUser(
         email,
         hashedPassword,
         fullName,
@@ -118,7 +120,16 @@ export class AuthService {
         role,
       );
 
-      await this.emailService.sendVerificationEmail(email, verificationToken);
+      // Gửi email xác thực 
+      try {
+        await this.emailService.sendVerificationEmail(email, verificationToken);
+      } catch (emailError) {
+        // Nếu gửi email thất bại, xóa người dùng đã tạo từ database
+        if (newUser?.userId) {
+          await this.safeDeleteUser(newUser.userId);
+        }
+        throw new InternalServerErrorException('Không thể gửi email xác thực, vui lòng thử lại sau');
+      }
 
       // Generate JWT token
       const payload = {
@@ -138,7 +149,37 @@ export class AuthService {
         accessToken,
       });
     } catch (error) {
-      throw new InternalServerErrorException('Failed to register user');
+      // Nếu đã tạo người dùng nhưng có lỗi khác xảy ra, xóa người dùng khỏi database
+      if (newUser?.userId) {
+        await this.safeDeleteUser(newUser.userId);
+      }
+      
+      if (error instanceof InternalServerErrorException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Đăng ký người dùng thất bại');
+    }
+  }
+
+  /**
+   * Xóa người dùng một cách an toàn, kiểm tra sự tồn tại trước khi xóa
+   * @param userId ID của người dùng cần xóa
+   */
+  private async safeDeleteUser(userId: string): Promise<void> {
+    try {
+      // Kiểm tra xem người dùng có tồn tại không
+      const userExists = await this.prisma.tbl_users.findUnique({
+        where: { userId },
+      });
+
+      // Chỉ xóa nếu người dùng tồn tại
+      if (userExists) {
+        await this.prisma.tbl_users.delete({
+          where: { userId },
+        });
+      }
+    } catch (error) {
+      console.error('Không thể xóa người dùng:', error);
     }
   }
 
