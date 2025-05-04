@@ -23,6 +23,7 @@ import { InstructorModule } from './common/modules/instructor.module';
 import { QuizAttemptModule } from 'src/common/modules/quiz-attempts.module';
 import { QuizzModule } from 'src/common/modules/quizz.module';
 import { QuestionModule } from 'src/common/modules/question.module';
+import { DiscussingModule } from 'src/common/modules/discussing.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { QuestionModule } from 'src/common/modules/question.module';
     CartModule,
     UserModule,
     InstructorModule,
+    DiscussingModule,
   ],
   controllers: [ElasticsearchController, RedisExampleController],
   providers: [
