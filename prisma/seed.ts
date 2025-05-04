@@ -8,6 +8,7 @@ async function main() {
   // Xóa dữ liệu cũ
   await prisma.tbl_quiz_answers.deleteMany();
   await prisma.tbl_quiz_attempts.deleteMany();
+  await prisma.tbl_answers.deleteMany();
   await prisma.tbl_questions.deleteMany();
   await prisma.tbl_quizzes.deleteMany();
   await prisma.tbl_lecture_progress.deleteMany();
@@ -33,7 +34,6 @@ async function main() {
   await prisma.tbl_instructors.deleteMany();
   await prisma.tbl_categories.deleteMany();
   await prisma.tbl_users.deleteMany();
-
   const adminUser = await prisma.tbl_users.create({
     data: {
       userId: uuidv4(),

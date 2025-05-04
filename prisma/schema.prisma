@@ -184,6 +184,7 @@ model tbl_users {
   tbl_payment               tbl_payment[]
   tbl_quiz_attempts         tbl_quiz_attempts[]
   tbl_voucher_usage_history tbl_voucher_usage_history[]
+  tbl_disscussing           tbl_disscussing[]
 }
 
 model tbl_voucher_courses {
@@ -268,7 +269,22 @@ model tbl_curricula {
   tbl_curriculum_progress tbl_curriculum_progress[]
   tbl_lectures            tbl_lectures[]
   tbl_quizzes             tbl_quizzes[]
+  tbl_disscussing         tbl_disscussing[]
 }
+
+model tbl_disscussing {
+  discussingId String   @id @default(uuid()) @db.Uuid
+  userId       String   @db.Uuid
+  curriculumId  String   @db.Uuid
+  title        String?
+  content      String   
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user         tbl_users     @relation(fields: [userId], references: [userId])
+  curricula    tbl_curricula @relation(fields: [curriculumId], references: [curriculumId]) 
+}
+
 
 model tbl_curriculum_progress {
   progressId    String         @id @db.Uuid
