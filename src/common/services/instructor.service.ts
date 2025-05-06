@@ -6,20 +6,30 @@ import { CreateInstructorDto } from '../dto/create-instructor.dto';
 export class InstructorService {
   constructor(private prisma: PrismaService) {}
 
-  async checkIsInstructor(userId: string): Promise<boolean> {
+  async checkIsInstructor(userId: string) {
     const instructor = await this.prisma.tbl_instructors.findFirst({
       where: {
         userId: userId,
       },
     });
 
-    return !!instructor;
+    if (!instructor) {
+      return {
+        isInstructor: false,
+        instructorId: null
+      };
+    }
+
+    return {
+      isInstructor: true,
+      instructorId: instructor.instructorId
+    };
   }
 
   async becomeInstructor(userId: string, createInstructorDto: CreateInstructorDto) {
     // Kiểm tra xem người dùng đã là instructor chưa
-    const isInstructor = await this.checkIsInstructor(userId);
-    if (isInstructor) {
+    const instructorCheck = await this.checkIsInstructor(userId);
+    if (instructorCheck.isInstructor) {
       throw new ConflictException('User is already an instructor');
     }
 

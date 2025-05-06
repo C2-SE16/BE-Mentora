@@ -10,12 +10,16 @@ import {
   HttpStatus,
   HttpCode,
   ValidationPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { CourseService } from '../services/course.service';
 import { CreateCourseDto } from '../dto/course.dto';
 import { CreateSimpleCourseDto } from '../dto/create-course.dto';
 import { UpdateCourseDetailsDto } from '../dto/update-course-details.dto';
 import { SearchCourseDto } from '../dto/search-course.dto';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { GetUser } from 'src/auth/decorators/get-user.decorator';
+import { UpdateCourseBasicDto } from '../dto/update-course-basic.dto';
 
 @Controller('courses')
 export class CourseController {
@@ -34,10 +38,14 @@ export class CourseController {
   }
 
   @Post('create-simple')
-  async createSimpleCourse(@Body() createCourseDto: CreateSimpleCourseDto) {
+  @UseGuards(JwtAuthGuard)
+  async createSimpleCourse(
+    @Body() createCourseDto: CreateSimpleCourseDto,
+    @GetUser() user,
+  ) {
     try {
       const course =
-        await this.courseService.createSimpleCourse(createCourseDto);
+        await this.courseService.createSimpleCourse(createCourseDto, user.userId);
       return {
         success: true,
         data: course,
@@ -304,9 +312,119 @@ export class CourseController {
       );
     }
   }
+
   @Get('/detail/:courseId')
-  getCourseDetail(@Param('courseId') courseId: string) {
-    console.log('controller get detail');
-    return this.courseService.getCourseWithDetails(courseId);
+  async getCourseDetail(@Param('courseId') courseId: string) {
+    try {
+      const courseDetails = await this.courseService.getCourseWithDetails(courseId);
+      
+      if (!courseDetails) {
+        throw new HttpException(
+          {
+            success: false,
+            message: 'Không tìm thấy khóa học',
+          },
+          HttpStatus.NOT_FOUND,
+        );
+      }
+      
+      return {
+        success: true,
+        data: courseDetails,
+        message: 'Lấy thông tin khóa học thành công',
+      };
+    } catch (error: unknown) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      
+      throw new HttpException(
+        {
+          success: false,
+          message: 'Không thể lấy thông tin khóa học',
+          error: (error as Error).message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('/instructor/my-courses')
+  @UseGuards(JwtAuthGuard)
+  async getCoursesByInstructor(@GetUser() user) {
+    try {
+      const courses = await this.courseService.getCoursesByUserId(user.userId);
+      return {
+        success: true,
+        data: courses,
+        message: 'Courses retrieved successfully',
+      };
+    } catch (error: unknown) {
+      throw new HttpException(
+        {
+          success: false,
+          message: 'Failed to retrieve instructor courses',
+          error: (error as Error).message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('/:courseId/basic-info')
+  @UseGuards(JwtAuthGuard)
+  async updateCourseBasicInfo(
+    @Param('courseId') courseId: string,
+    @Body() body: UpdateCourseBasicDto,
+    @GetUser() user,
+  ) {
+    try {
+      const course = await this.courseService.getCourseById(courseId);
+      
+      if (!course) {
+        throw new HttpException(
+          {
+            success: false,
+            message: 'Course not found',
+          },
+          HttpStatus.NOT_FOUND,
+        );
+      }
+      
+      // Kiểm tra xem người dùng có phải là instructor của course không
+      if (course.instructor && course.instructor.user && course.instructor.user.userId !== user.userId) {
+        throw new HttpException(
+          {
+            success: false,
+            message: 'You are not authorized to update this course',
+          },
+          HttpStatus.FORBIDDEN,
+        );
+      }
+
+      const updatedCourse = await this.courseService.updateCourseBasicInfo(
+        courseId,
+        body,
+      );
+      
+      return {
+        success: true,
+        data: updatedCourse,
+        message: 'Course basic information updated successfully',
+      };
+    } catch (error: unknown) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      
+      throw new HttpException(
+        {
+          success: false,
+          message: 'Failed to update course basic information',
+          error: (error as Error).message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }

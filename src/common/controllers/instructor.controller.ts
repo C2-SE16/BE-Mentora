@@ -10,8 +10,8 @@ export class InstructorController {
   @UseGuards(JwtAuthGuard)
   @Get('check')
   async checkIsInstructor(@Request() req) {
-    const isInstructor = await this.instructorService.checkIsInstructor(req.user.userId);
-    return { isInstructor };
+    const result = await this.instructorService.checkIsInstructor(req.user.userId);
+    return result;
   }
 
   @UseGuards(JwtAuthGuard)

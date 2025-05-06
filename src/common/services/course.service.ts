@@ -18,6 +18,7 @@ import { formatDate } from '../utils/formatDate.util';
 import { ElasticsearchService } from './elasticsearch.service';
 import { SearchCourseDto } from '../dto/search-course.dto';
 import { CourseSearchResult } from '../interfaces/course.interface';
+import { UpdateCourseBasicDto } from '../dto/update-course-basic.dto';
 
 @Injectable()
 export class CourseService {
@@ -163,20 +164,23 @@ export class CourseService {
     });
   }
 
-  async createSimpleCourse(createCourseDto: CreateSimpleCourseDto) {
+  async createSimpleCourse(
+    createCourseDto: CreateSimpleCourseDto,
+    userId: string,
+  ) {
     try {
-      // Lấy một instructor từ database
+      // Tìm instructor dựa trên userId
       const instructor = await this.prismaService.tbl_instructors.findFirst({
         where: {
-          isVerified: true,
+          userId: userId,
         },
       });
 
       if (!instructor) {
-        throw new Error('No verified instructor found');
+        throw new Error('Instructor not found for this user');
       }
 
-      // Tạo khóa học mới với instructorId từ database
+      // Tạo khóa học mới với instructorId từ instructor tìm được
       const newCourse = await this.prismaService.tbl_courses.create({
         data: {
           courseId: uuidv4(),
@@ -277,6 +281,7 @@ export class CourseService {
       approved: course.approved,
       rating: course.rating ? Number(course.rating) : 0,
       comment: course.comment,
+      thumbnail: course.thumbnail,
       createdAt: course.createdAt,
       updatedAt: course.updatedAt,
       reviews: course.tbl_course_reviews.map((review) => ({
@@ -619,6 +624,61 @@ export class CourseService {
     };
   }
 
+  async getCoursesByInstructorId(instructorId: string) {
+    try {
+      const courses = await this.prismaService.tbl_courses.findMany({
+        where: {
+          instructorId: instructorId,
+        },
+        include: {
+          tbl_course_categories: {
+            include: {
+              tbl_categories: true,
+            },
+          },
+          tbl_instructors: {
+            include: {
+              tbl_users: true,
+            },
+          },
+          tbl_course_reviews: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+      return courses.map((course) => ({
+        courseId: course.courseId,
+        title: course.title,
+        description: course.description,
+        overview: course.overview,
+        durationTime: course.durationTime,
+        price: course.price ? Number(course.price) : 0,
+        approved: course.approved,
+        rating: course.rating ? Number(course.rating) : 0,
+        thumbnail: course.thumbnail,
+        createdAt: course.createdAt,
+        updatedAt: course.updatedAt,
+        categories: course.tbl_course_categories.map((category) => ({
+          categoryId: category.categoryId,
+          name: category.tbl_categories?.categoryType,
+        })),
+        instructor: course.tbl_instructors
+          ? {
+              instructorId: course.tbl_instructors.instructorId,
+              name: course.tbl_instructors.tbl_users?.fullName,
+              avatar: course.tbl_instructors.tbl_users?.avatar,
+            }
+          : null,
+        reviewCount: course.tbl_course_reviews.length,
+      }));
+    } catch (error) {
+      console.error('Error fetching courses by instructor ID:', error);
+      throw error;
+    }
+  }
+
   async getHomepageCourses(): Promise<HomepageCoursesResponseEntity> {
     try {
       const recommendedCourses = await this.prismaService.tbl_courses.findMany({
@@ -782,6 +842,46 @@ export class CourseService {
       totalHours: Math.round(course.durationTime || 600) / 60 || 10,
       description: course.description || 'Không có mô tả khóa học',
       categories: categories,
+    });
+  }
+
+  async getCoursesByUserId(userId: string) {
+    try {
+      // Tìm instructor dựa trên userId
+      const instructor = await this.prismaService.tbl_instructors.findFirst({
+        where: {
+          userId: userId,
+        },
+      });
+
+      if (!instructor) {
+        throw new Error('Instructor not found for this user');
+      }
+
+      // Lấy khóa học dựa trên instructorId
+      return this.getCoursesByInstructorId(instructor.instructorId);
+    } catch (error) {
+      console.error('Error fetching courses by user ID:', error);
+      throw error;
+    }
+  }
+
+  async updateCourseBasicInfo(courseId: string, body: UpdateCourseBasicDto) {
+    const course = await this.prismaService.tbl_courses.findUnique({
+      where: { courseId },
+    });
+
+    if (!course) {
+      throw new Error('Course not found');
+    }
+
+    return this.prismaService.tbl_courses.update({
+      where: { courseId },
+      data: {
+        title: body.title,
+        description: body.description,
+        updatedAt: new Date(),
+      },
     });
   }
 }
