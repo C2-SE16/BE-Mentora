@@ -24,6 +24,7 @@ import { QuizAttemptModule } from 'src/common/modules/quiz-attempts.module';
 import { QuizzModule } from 'src/common/modules/quizz.module';
 import { QuestionModule } from 'src/common/modules/question.module';
 import { DiscussingModule } from 'src/common/modules/discussing.module';
+import { ProgressModule } from 'src/common/modules/progress.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { DiscussingModule } from 'src/common/modules/discussing.module';
     UserModule,
     InstructorModule,
     DiscussingModule,
+    ProgressModule,
   ],
   controllers: [ElasticsearchController, RedisExampleController],
   providers: [
