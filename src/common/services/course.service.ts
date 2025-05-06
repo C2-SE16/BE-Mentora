@@ -648,7 +648,7 @@ export class CourseService {
         },
       });
 
-      return courses.map(course => ({
+      return courses.map((course) => ({
         courseId: course.courseId,
         title: course.title,
         description: course.description,
@@ -660,15 +660,17 @@ export class CourseService {
         thumbnail: course.thumbnail,
         createdAt: course.createdAt,
         updatedAt: course.updatedAt,
-        categories: course.tbl_course_categories.map(category => ({
+        categories: course.tbl_course_categories.map((category) => ({
           categoryId: category.categoryId,
           name: category.tbl_categories?.categoryType,
         })),
-        instructor: course.tbl_instructors ? {
-          instructorId: course.tbl_instructors.instructorId,
-          name: course.tbl_instructors.tbl_users?.fullName,
-          avatar: course.tbl_instructors.tbl_users?.avatar,
-        } : null,
+        instructor: course.tbl_instructors
+          ? {
+              instructorId: course.tbl_instructors.instructorId,
+              name: course.tbl_instructors.tbl_users?.fullName,
+              avatar: course.tbl_instructors.tbl_users?.avatar,
+            }
+          : null,
         reviewCount: course.tbl_course_reviews.length,
       }));
     } catch (error) {
@@ -868,11 +870,11 @@ export class CourseService {
     const course = await this.prismaService.tbl_courses.findUnique({
       where: { courseId },
     });
-    
+
     if (!course) {
       throw new Error('Course not found');
     }
-    
+
     return this.prismaService.tbl_courses.update({
       where: { courseId },
       data: {
