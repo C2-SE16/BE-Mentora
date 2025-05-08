@@ -19,12 +19,14 @@ import { ElasticsearchService } from './elasticsearch.service';
 import { SearchCourseDto } from '../dto/search-course.dto';
 import { CourseSearchResult } from '../interfaces/course.interface';
 import { UpdateCourseBasicDto } from '../dto/update-course-basic.dto';
+import { VoucherService } from './voucher.service';
 
 @Injectable()
 export class CourseService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly elasticsearchService: ElasticsearchService,
+    private readonly voucherService: VoucherService,
   ) {}
 
   createCourse(body: CreateCourseDto) {
@@ -779,13 +781,43 @@ export class CourseService {
           }),
       );
 
+      // Sau khi lấy danh sách khóa học, cần lấy thông tin giảm giá
+      const courseIds = [
+        ...recommendedCourses.map((course) => course.courseId),
+        ...bestSellerCourses.map((course) => course.courseId),
+      ];
+
+      // Sử dụng phương thức getDiscountedCoursesInfo để lấy thông tin giảm giá
+      const discountedCoursesInfo =
+        await this.voucherService.getDiscountedCoursesInfo(courseIds);
+
+      // Tạo map để dễ dàng tra cứu thông tin giảm giá
+      const discountMap = new Map();
+      discountedCoursesInfo.forEach((course) => {
+        discountMap.set(course.courseId, {
+          bestVoucher: course.bestVoucher,
+          discountedPrice: course.bestVoucher
+            ? Number(course.price) -
+              Number(course.bestVoucher.calculatedDiscount)
+            : null,
+        });
+      });
+
+      // Format kết quả với thông tin giảm giá
+      const formattedRecommendedCourses = recommendedCourses.map((course) => {
+        const discount = discountMap.get(course.courseId);
+        return this.formatCourseForHomepage(course, discount);
+      });
+
+      const formattedBestSellerCourses = bestSellerCourses.map((course) => {
+        const discount = discountMap.get(course.courseId);
+        return this.formatCourseForHomepage(course, discount);
+      });
+
+      // Trả về kết quả
       return {
-        recommendedCourses: recommendedCourses.map((course) =>
-          this.formatCourseForHomepage(course),
-        ),
-        bestSellerCourses: bestSellerCourses.map((course) =>
-          this.formatCourseForHomepage(course),
-        ),
+        recommendedCourses: formattedRecommendedCourses,
+        bestSellerCourses: formattedBestSellerCourses,
         topics: formattedTopics,
         mentors: formattedMentors,
       };
@@ -797,6 +829,7 @@ export class CourseService {
 
   private formatCourseForHomepage(
     course: HomepageCourse,
+    discountInfo?: { bestVoucher: any; discountedPrice: number },
   ): HomepageCourseEntity {
     // Calculate average rating
     const reviews = course.tbl_course_reviews || [];
@@ -818,7 +851,12 @@ export class CourseService {
 
     // Calculate prices
     const currentPrice = course.price?.toNumber() || 100000;
-    const originalPrice = Math.round(currentPrice * 1.2); // Example discount calculation
+    // Sử dụng giá đã giảm nếu có
+    const discountedPrice = discountInfo?.discountedPrice;
+    // Hiển thị giá gốc nếu có giảm giá, ngược lại tính theo quy tắc hiện tại
+    const originalPrice = discountedPrice
+      ? currentPrice
+      : Math.round(currentPrice * 1.2);
 
     // Get categories
     const categories =
@@ -833,7 +871,9 @@ export class CourseService {
       instructor: instructor,
       rating: averageRating,
       reviews: totalReviews,
-      currentPrice: `₫${currentPrice.toLocaleString()}`,
+      currentPrice: discountedPrice
+        ? `₫${discountedPrice.toLocaleString()}`
+        : `₫${currentPrice.toLocaleString()}`,
       originalPrice: `₫${originalPrice.toLocaleString()}`,
       isBestSeller: course.isBestSeller || false,
       image: course.thumbnail || '',
@@ -842,6 +882,13 @@ export class CourseService {
       totalHours: Math.round(course.durationTime || 600) / 60 || 10,
       description: course.description || 'Không có mô tả khóa học',
       categories: categories,
+      hasDiscount: !!discountedPrice,
+      discountPercentage: discountInfo?.bestVoucher
+        ? Math.round(
+            (discountInfo.bestVoucher.calculatedDiscount / currentPrice) * 100,
+          )
+        : undefined,
+      voucherCode: discountInfo?.bestVoucher?.code || null,
     });
   }
 

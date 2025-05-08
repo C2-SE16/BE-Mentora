@@ -213,6 +213,10 @@ model tbl_vouchers {
   code                      String?                     @unique @db.VarChar
   description               String?
   scope                     voucher_scope_enum?
+  courseId                  String?                     @db.Uuid
+  creatorId                 String?                     @db.Uuid
+  creatorRole               String?                     @db.VarChar
+  categoryId                String?                     @db.Uuid
   discountType              String?                     @default("Percentage") @db.VarChar
   discountValue             Decimal?                    @db.Decimal
   maxDiscount               Decimal?                    @db.Decimal

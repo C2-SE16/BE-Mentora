@@ -1,7 +1,7 @@
 import { ClassSerializerInterceptor, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './common/prisma/prisma.module';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { CourseModule } from './common/modules/course.module';
 import { CategoryModule } from './common/modules/category.module';
 import { UploadModule } from 'src/common/modules/upload.module';
@@ -23,6 +23,8 @@ import { InstructorModule } from './common/modules/instructor.module';
 import { QuizAttemptModule } from 'src/common/modules/quiz-attempts.module';
 import { QuizzModule } from 'src/common/modules/quizz.module';
 import { QuestionModule } from 'src/common/modules/question.module';
+import { RolesGuard } from './auth/guards/roles.guard';
+import { VoucherModule } from './common/modules/voucher.module';
 import { DiscussingModule } from 'src/common/modules/discussing.module';
 import { ProgressModule } from 'src/common/modules/progress.module';
 
@@ -55,6 +57,7 @@ import { ProgressModule } from 'src/common/modules/progress.module';
     CartModule,
     UserModule,
     InstructorModule,
+    VoucherModule,
     DiscussingModule,
     ProgressModule,
   ],

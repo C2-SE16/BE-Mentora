@@ -17,13 +17,17 @@ import { CreateCourseDto } from '../dto/course.dto';
 import { CreateSimpleCourseDto } from '../dto/create-course.dto';
 import { UpdateCourseDetailsDto } from '../dto/update-course-details.dto';
 import { SearchCourseDto } from '../dto/search-course.dto';
+import { VoucherService } from '../services/voucher.service';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
 import { UpdateCourseBasicDto } from '../dto/update-course-basic.dto';
 
 @Controller('courses')
 export class CourseController {
-  constructor(private readonly courseService: CourseService) {}
+  constructor(
+    private readonly courseService: CourseService,
+    private readonly voucherService: VoucherService,
+  ) {}
 
   @Get('search')
   async searchCourses(
@@ -44,8 +48,10 @@ export class CourseController {
     @GetUser() user,
   ) {
     try {
-      const course =
-        await this.courseService.createSimpleCourse(createCourseDto, user.userId);
+      const course = await this.courseService.createSimpleCourse(
+        createCourseDto,
+        user.userId,
+      );
       return {
         success: true,
         data: course,
@@ -313,11 +319,29 @@ export class CourseController {
     }
   }
 
+  @Get('/:courseId/applicable-vouchers')
+  async getApplicableVouchersForCourse(@Param('courseId') courseId: string) {
+    return this.voucherService.getApplicableVouchersForCourse(courseId);
+  }
+
+  // const course = await this.courseService.getCourseWithDetails(courseId);
+  // const { data: voucherInfo } =
+  //   await this.voucherService.getApplicableVouchersForCourse(courseId);
+  // return {
+  //   ...course,
+  //   bestVoucher: voucherInfo.bestVoucher,
+  //   discountedPrice: voucherInfo?.bestVoucher
+  //     ? voucherInfo.bestVoucher.finalPrice
+  //     : null,
+  // };
+
   @Get('/detail/:courseId')
   async getCourseDetail(@Param('courseId') courseId: string) {
     try {
-      const courseDetails = await this.courseService.getCourseWithDetails(courseId);
-      
+      const courseDetails =
+        await this.courseService.getCourseWithDetails(courseId);
+      const { data: voucherInfo } =
+        await this.voucherService.getApplicableVouchersForCourse(courseId);
       if (!courseDetails) {
         throw new HttpException(
           {
@@ -327,17 +351,23 @@ export class CourseController {
           HttpStatus.NOT_FOUND,
         );
       }
-      
+
       return {
         success: true,
-        data: courseDetails,
+        data: {
+          ...courseDetails,
+          bestVoucher: voucherInfo.bestVoucher,
+          discountedPrice: voucherInfo?.bestVoucher
+            ? voucherInfo.bestVoucher.finalPrice
+            : null,
+        },
         message: 'Lấy thông tin khóa học thành công',
       };
     } catch (error: unknown) {
       if (error instanceof HttpException) {
         throw error;
       }
-      
+
       throw new HttpException(
         {
           success: false,
@@ -380,7 +410,7 @@ export class CourseController {
   ) {
     try {
       const course = await this.courseService.getCourseById(courseId);
-      
+
       if (!course) {
         throw new HttpException(
           {
@@ -390,9 +420,13 @@ export class CourseController {
           HttpStatus.NOT_FOUND,
         );
       }
-      
+
       // Kiểm tra xem người dùng có phải là instructor của course không
-      if (course.instructor && course.instructor.user && course.instructor.user.userId !== user.userId) {
+      if (
+        course.instructor &&
+        course.instructor.user &&
+        course.instructor.user.userId !== user.userId
+      ) {
         throw new HttpException(
           {
             success: false,
@@ -406,7 +440,7 @@ export class CourseController {
         courseId,
         body,
       );
-      
+
       return {
         success: true,
         data: updatedCourse,
@@ -416,7 +450,7 @@ export class CourseController {
       if (error instanceof HttpException) {
         throw error;
       }
-      
+
       throw new HttpException(
         {
           success: false,
