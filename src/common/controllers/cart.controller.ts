@@ -3,6 +3,7 @@ import { CartService } from '../services/cart.service';
 import { AddToCartDto, RemoveFromCartDto, GetCartDto } from '../dto/cart.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { GetUser } from '../../auth/decorators/get-user.decorator';
+import { UserId } from '../decorators/userid.decorator';
 
 @Controller('cart')
 @UseGuards(JwtAuthGuard)
@@ -13,11 +14,15 @@ export class CartController {
   async addToCart(
     @Body() addToCartDto: AddToCartDto,
     @GetUser('userId') userId: string,
+    // @UserId() userId: string,
   ) {
-    return this.cartService.addToCart({
-      ...addToCartDto,
-      userId,
-    });
+    // console.log('addToCartDto:::', addToCartDto);
+    console.log('userId:::', userId);
+    return this.cartService.addToCart(addToCartDto, userId);
+    // return this.cartService.addToCart({
+    //   ...addToCartDto,
+    //   userId,
+    // });
   }
 
   @Delete('remove')
@@ -40,4 +45,17 @@ export class CartController {
   async clearCart(@GetUser('userId') userId: string) {
     return this.cartService.clearCart(userId);
   }
-} 
+
+  @Post('apply-voucher')
+  async applyVoucherToCart(
+    @Body() data: { code: string },
+    @GetUser('userId') userId: string,
+  ) {
+    return this.cartService.applyVoucherToCart(userId, data.code);
+  }
+
+  // @Delete('remove-voucher')
+  // async removeVoucherFromCart(@GetUser('userId') userId: string) {
+  //   return this.cartService.removeVoucherFromCart(userId);
+  // }
+}

@@ -14,6 +14,9 @@ export class HomepageCourseEntity {
   updatedDate: string;
   totalHours?: number = 0;
   description?: string = '';
+  hasDiscount?: boolean;
+  discountPercentage?: number;
+  voucherCode?: string;
   categories?: {
     id?: string;
     name?: category_enum | string | null;
