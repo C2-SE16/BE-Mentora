@@ -113,6 +113,10 @@ model tbl_instructors {
   experience     String?
   average_rating Decimal?      @db.Decimal
   isVerified     Boolean?
+  paypalEmail    String?       @db.VarChar
+  isPaypalVerified Boolean?    @default(false)
+  paypalVerificationToken String? @db.VarChar
+  paypalVerificationTokenExp DateTime? @db.Timestamp(6)
   createdAt      DateTime?     @db.Timestamp(6)
   updatedAt      DateTime?     @db.Timestamp(6)
   tbl_courses    tbl_courses[]

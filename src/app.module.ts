@@ -27,6 +27,7 @@ import { RolesGuard } from './auth/guards/roles.guard';
 import { VoucherModule } from './common/modules/voucher.module';
 import { DiscussingModule } from 'src/common/modules/discussing.module';
 import { ProgressModule } from 'src/common/modules/progress.module';
+import { PaymentModule } from './payment/payment.module';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { ProgressModule } from 'src/common/modules/progress.module';
     VoucherModule,
     DiscussingModule,
     ProgressModule,
+    PaymentModule,
   ],
   controllers: [ElasticsearchController, RedisExampleController],
   providers: [
