@@ -47,10 +47,8 @@ export class CartService {
   async getCart(getCartDto: GetCartDto) {
     const { userId } = getCartDto;
     const cartKey = this.getCartKey(userId);
-    console.log('cartKey::', cartKey);
     // Lấy danh sách khóa học trong giỏ hàng
     const courseIds = (await this.redisService.get<string[]>(cartKey)) || [];
-    console.log('courseIds::', courseIds);
     // Lấy thông tin voucher đã áp dụng (nếu có)
     const appliedVoucher = await this.redisService.get<AppliedVoucherInCart>(
       `${cartKey}:voucher`,

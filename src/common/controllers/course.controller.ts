@@ -18,6 +18,7 @@ import { CreateSimpleCourseDto } from '../dto/create-course.dto';
 import { UpdateCourseDetailsDto } from '../dto/update-course-details.dto';
 import { SearchCourseDto } from '../dto/search-course.dto';
 import { VoucherService } from '../services/voucher.service';
+import { VoucherService } from '../services/voucher.service';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
 import { UpdateCourseBasicDto } from '../dto/update-course-basic.dto';
@@ -324,16 +325,6 @@ export class CourseController {
     return this.voucherService.getApplicableVouchersForCourse(courseId);
   }
 
-  // const course = await this.courseService.getCourseWithDetails(courseId);
-  // const { data: voucherInfo } =
-  //   await this.voucherService.getApplicableVouchersForCourse(courseId);
-  // return {
-  //   ...course,
-  //   bestVoucher: voucherInfo.bestVoucher,
-  //   discountedPrice: voucherInfo?.bestVoucher
-  //     ? voucherInfo.bestVoucher.finalPrice
-  //     : null,
-  // };
 
   @Get('/detail/:courseId')
   async getCourseDetail(@Param('courseId') courseId: string) {

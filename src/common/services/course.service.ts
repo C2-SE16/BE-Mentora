@@ -48,7 +48,13 @@ export class CourseService {
   }
 
   getCourse() {
-    return this.prismaService.tbl_courses.findMany();
+    return this.prismaService.tbl_courses.findMany().then((courses) => {
+      return courses.map((course) => ({
+        ...course,
+        price: course.price ? Number(course.price) : null,
+        rating: course.rating ? Number(Number(course.rating).toFixed(1)) : null,
+      }));
+    });
   }
 
   async getCourseById(courseId: string) {
@@ -281,7 +287,7 @@ export class CourseService {
       durationTime: course.durationTime,
       price: course.price ? Number(course.price) : 0,
       approved: course.approved,
-      rating: course.rating ? Number(course.rating) : 0,
+      rating: course.rating ? Number(Number(course.rating).toFixed(1)) : 0,
       comment: course.comment,
       thumbnail: course.thumbnail,
       createdAt: course.createdAt,
