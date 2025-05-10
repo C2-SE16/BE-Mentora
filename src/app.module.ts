@@ -1,4 +1,4 @@
-import { ClassSerializerInterceptor, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './common/prisma/prisma.module';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
@@ -64,7 +64,8 @@ import { PaymentModule } from './payment/payment.module';
   ],
   controllers: [ElasticsearchController, RedisExampleController],
   providers: [
-    { provide: APP_INTERCEPTOR, useClass: ClassSerializerInterceptor },
+    // Đã xóa ClassSerializerInterceptor để tránh xung đột
+    // { provide: APP_INTERCEPTOR, useClass: ClassSerializerInterceptor },
   ],
 })
 export class AppModule {}

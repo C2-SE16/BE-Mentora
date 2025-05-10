@@ -1,13 +1,13 @@
-import { IsNotEmpty, IsString, IsUUID } from 'class-validator';
+import { IsNotEmpty, IsString, IsUUID, IsArray, IsOptional, IsBoolean } from 'class-validator';
 
 export class AddToCartDto {
   @IsNotEmpty()
   @IsUUID()
   courseId: string;
 
-  // @IsNotEmpty()
+  // @IsOptional()
   // @IsString()
-  // userId: string;
+  // userId?: string;
 }
 
 export class RemoveFromCartDto {
@@ -15,15 +15,52 @@ export class RemoveFromCartDto {
   @IsUUID()
   courseId: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  userId: string;
+  userId?: string;
 }
 
 export class GetCartDto {
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  userId: string;
+  userId?: string;
+}
+
+export class SelectCartItemsDto {
+  @IsOptional()
+  @IsString()
+  userId?: string;
+  
+  @IsNotEmpty()
+  @IsArray()
+  @IsUUID(undefined, { each: true })
+  selectedCourseIds: string[];
+}
+
+export class GetSelectedCartItemsDto {
+  @IsOptional()
+  @IsString()
+  userId?: string;
+}
+
+export class CartItemDto {
+  @IsNotEmpty()
+  @IsUUID()
+  courseId: string;
+  
+  @IsOptional()
+  @IsBoolean()
+  selected?: boolean = false;
+}
+
+export class UpdateCartItemStatusDto {
+  @IsOptional()
+  @IsString()
+  userId?: string;
+  
+  @IsNotEmpty()
+  @IsArray()
+  items: CartItemDto[];
 }
 
 export interface DiscountedCourseInfo {
