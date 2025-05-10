@@ -27,6 +27,11 @@ import { ROLE } from '../constants/role.constant';
 export class VoucherController {
   constructor(private readonly voucherService: VoucherService) {}
 
+  @Get('active-site-voucher')
+  async getActiveSiteVoucher() {
+    return this.voucherService.getActiveSiteVoucher();
+  }
+
   @Post('create-voucher')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(ROLE.ADMIN, ROLE.INSTRUCTOR)

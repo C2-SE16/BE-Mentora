@@ -5,7 +5,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { ApplyVoucherDto, CreateVoucherDto, UpdateVoucherDto } from '../dto/voucher.dto';
+import {
+  ApplyVoucherDto,
+  CreateVoucherDto,
+  UpdateVoucherDto,
+} from '../dto/voucher.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { VoucherScopeEnum } from '../constants/voucher.constant';
 import { ROLE } from '../constants/role.constant';
@@ -734,6 +738,32 @@ export class VoucherService {
     });
 
     return coursesWithDiscount;
+  }
+
+  async getActiveSiteVoucher() {
+    const now = new Date();
+
+    const activeSiteVoucher = await this.prisma.tbl_vouchers.findMany({
+      where: {
+        isActive: true,
+        scope: VoucherScopeEnum.ALL_COURSES,
+        creatorRole: ROLE.ADMIN,
+        startDate: { lte: now },
+        endDate: { gte: now },
+      },
+      orderBy: {
+        discountValue: 'desc',
+      },
+      take: 1,
+    });
+
+    return {
+      success: true,
+      hasActiveVoucher: activeSiteVoucher.length > 0,
+      voucher: activeSiteVoucher[0]
+        ? convertDecimalValues(activeSiteVoucher[0])
+        : null,
+    };
   }
 
   private calculateDiscount(price: number, voucher: any): number {
