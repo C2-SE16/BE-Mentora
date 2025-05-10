@@ -18,7 +18,6 @@ import { CreateSimpleCourseDto } from '../dto/create-course.dto';
 import { UpdateCourseDetailsDto } from '../dto/update-course-details.dto';
 import { SearchCourseDto } from '../dto/search-course.dto';
 import { VoucherService } from '../services/voucher.service';
-import { VoucherService } from '../services/voucher.service';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
 import { UpdateCourseBasicDto } from '../dto/update-course-basic.dto';
