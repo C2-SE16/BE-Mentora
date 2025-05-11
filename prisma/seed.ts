@@ -99,6 +99,77 @@ async function main() {
     },
   });
 
+  // Thêm các danh mục còn lại
+  const financeCategory = await prisma.tbl_categories.create({
+    data: {
+      categoryId: uuidv4(),
+      categoryType: 'FINANCE',
+    },
+  });
+
+  const businessCategory = await prisma.tbl_categories.create({
+    data: {
+      categoryId: uuidv4(),
+      categoryType: 'BUSSINESS',
+    },
+  });
+
+  const designCategory = await prisma.tbl_categories.create({
+    data: {
+      categoryId: uuidv4(),
+      categoryType: 'DESIGN',
+    },
+  });
+
+  const lifestyleCategory = await prisma.tbl_categories.create({
+    data: {
+      categoryId: uuidv4(),
+      categoryType: 'LIFESTYLE',
+    },
+  });
+
+  const personalDevCategory = await prisma.tbl_categories.create({
+    data: {
+      categoryId: uuidv4(),
+      categoryType: 'PERSONAL_DEVELOPMENT',
+    },
+  });
+
+  const healthCategory = await prisma.tbl_categories.create({
+    data: {
+      categoryId: uuidv4(),
+      categoryType: 'HEALTH',
+    },
+  });
+
+  const musicCategory = await prisma.tbl_categories.create({
+    data: {
+      categoryId: uuidv4(),
+      categoryType: 'MUSIC',
+    },
+  });
+
+  const languageCategory = await prisma.tbl_categories.create({
+    data: {
+      categoryId: uuidv4(),
+      categoryType: 'LANGUAGE',
+    },
+  });
+
+  const scienceCategory = await prisma.tbl_categories.create({
+    data: {
+      categoryId: uuidv4(),
+      categoryType: 'SCIENCE',
+    },
+  });
+
+  const mathCategory = await prisma.tbl_categories.create({
+    data: {
+      categoryId: uuidv4(),
+      categoryType: 'MATH',
+    },
+  });
+
   const course1 = await prisma.tbl_courses.create({
     data: {
       courseId: uuidv4(),
@@ -594,6 +665,323 @@ async function main() {
       isBestSeller: true,
       isRecommended: false,
       categoryId: itCategory.categoryId,
+    },
+  ];
+
+  // Tạo các khóa học được đề xuất
+  for (const courseData of recommendedCourses) {
+    const { categoryId, ...courseInfo } = courseData;
+    const course = await prisma.tbl_courses.create({
+      data: {
+        courseId: uuidv4(),
+        instructorId: instructor.instructorId,
+        ...courseInfo,
+        approved: 'APPROVED',
+        rating: 4.0 + Math.random(), // Random rating từ 4.0 đến 5.0
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+
+    await prisma.tbl_course_categories.create({
+      data: {
+        courseCategoryId: uuidv4(),
+        categoryId: categoryId,
+        courseId: course.courseId,
+      },
+    });
+  }
+
+  // Tạo các khóa học bán chạy nhất
+  for (const courseData of bestSellerCourses) {
+    const { categoryId, ...courseInfo } = courseData;
+    const course = await prisma.tbl_courses.create({
+      data: {
+        courseId: uuidv4(),
+        instructorId: instructor.instructorId,
+        ...courseInfo,
+        approved: 'APPROVED',
+        rating: 4.2 + Math.random() * 0.8, // Random rating từ 4.2 đến 5.0
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+
+    await prisma.tbl_course_categories.create({
+      data: {
+        courseCategoryId: uuidv4(),
+        categoryId: categoryId,
+        courseId: course.courseId,
+      },
+    });
+  }
+
+  // Thêm khóa học cho các danh mục mới sau đoạn code của bestSellerCourses
+
+  // Danh sách khóa học cho các danh mục mới
+  const additionalCategoryCoursesData = [
+    // Finance courses
+    {
+      title: 'Đầu tư chứng khoán cơ bản',
+      description: 'Các nguyên tắc cơ bản của đầu tư chứng khoán',
+      overview:
+        'Khóa học giúp bạn hiểu cách phân tích và đầu tư vào thị trường chứng khoán',
+      durationTime: 2400, // 40 hours
+      price: 89.99,
+      thumbnail:
+        'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3',
+      isBestSeller: true,
+      isRecommended: false,
+      categoryId: financeCategory.categoryId,
+    },
+    {
+      title: 'Quản lý tài chính cá nhân',
+      description: 'Lập kế hoạch tài chính và đầu tư thông minh',
+      overview:
+        'Học cách quản lý ngân sách, tiết kiệm và lập kế hoạch tài chính dài hạn',
+      durationTime: 1800, // 30 hours
+      price: 69.99,
+      thumbnail:
+        'https://plus.unsplash.com/premium_photo-1688821130079-6194699d26e1?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+      isBestSeller: false,
+      isRecommended: true,
+      categoryId: financeCategory.categoryId,
+    },
+
+    // Business courses
+    {
+      title: 'Khởi nghiệp kinh doanh',
+      description: 'Từ ý tưởng đến mô hình kinh doanh thành công',
+      overview:
+        'Khóa học cung cấp các bước xây dựng doanh nghiệp từ khâu ý tưởng đến vận hành',
+      durationTime: 3600, // 60 hours
+      price: 99.99,
+      thumbnail:
+        'https://plus.unsplash.com/premium_vector-1710425435145-7f4f0b49edcf?q=80&w=2210&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+      isBestSeller: true,
+      isRecommended: false,
+      categoryId: businessCategory.categoryId,
+    },
+    {
+      title: 'Quản trị doanh nghiệp hiện đại',
+      description: 'Chiến lược và kỹ năng lãnh đạo doanh nghiệp',
+      overview:
+        'Học cách xây dựng chiến lược, quản lý nhân sự và phát triển doanh nghiệp bền vững',
+      durationTime: 3000, // 50 hours
+      price: 109.99,
+      thumbnail:
+        'https://images.unsplash.com/photo-1556761175-4b46a572b786?q=80&w=2074&auto=format&fit=crop&ixlib=rb-4.0.3',
+      isBestSeller: false,
+      isRecommended: true,
+      categoryId: businessCategory.categoryId,
+    },
+
+    // Design courses
+    {
+      title: 'Thiết kế đồ họa với Adobe Creative Suite',
+      description: 'Học Photoshop, Illustrator và InDesign chuyên nghiệp',
+      overview:
+        'Khóa học giúp bạn làm chủ các công cụ thiết kế đồ họa hàng đầu của Adobe',
+      durationTime: 4200, // 70 hours
+      price: 119.99,
+      thumbnail:
+        'https://images.unsplash.com/photo-1626785774573-4b799315345d?q=80&w=2071&auto=format&fit=crop&ixlib=rb-4.0.3',
+      isBestSeller: true,
+      isRecommended: false,
+      categoryId: designCategory.categoryId,
+    },
+    {
+      title: 'Thiết kế 3D với Blender',
+      description: 'Học cách tạo mô hình 3D và animation',
+      overview:
+        'Từ cơ bản đến nâng cao về modeling, texturing, lighting và animation trong Blender',
+      durationTime: 3600, // 60 hours
+      price: 89.99,
+      thumbnail:
+        'https://images.unsplash.com/photo-1663255107091-d450616908b3?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+      isBestSeller: false,
+      isRecommended: true,
+      categoryId: designCategory.categoryId,
+    },
+
+    // Lifestyle courses
+    {
+      title: 'Nghệ thuật nấu ăn cơ bản',
+      description: 'Học nấu các món ăn từ nhiều nền ẩm thực',
+      overview:
+        'Khóa học giúp bạn nắm vững các kỹ thuật nấu ăn cơ bản và áp dụng vào nhiều món ăn',
+      durationTime: 2400, // 40 hours
+      price: 59.99,
+      thumbnail:
+        'https://images.unsplash.com/photo-1556910103-1c02745aae4d?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3',
+      isBestSeller: true,
+      isRecommended: false,
+      categoryId: lifestyleCategory.categoryId,
+    },
+    {
+      title: 'Trang trí nội thất và thiết kế không gian sống',
+      description: 'Biến không gian sống thành nơi đẹp và tiện nghi',
+      overview:
+        'Học cách phối màu, bố trí nội thất và trang trí nhà cửa theo nhiều phong cách',
+      durationTime: 1800, // 30 hours
+      price: 69.99,
+      thumbnail:
+        'https://images.unsplash.com/photo-1615529162924-f8605388461d?q=80&w=2069&auto=format&fit=crop&ixlib=rb-4.0.3',
+      isBestSeller: false,
+      isRecommended: true,
+      categoryId: lifestyleCategory.categoryId,
+    },
+
+    // Personal Development courses
+    {
+      title: 'Kỹ năng giao tiếp hiệu quả',
+      description: 'Phát triển khả năng giao tiếp trong công việc và cuộc sống',
+      overview:
+        'Khóa học giúp bạn cải thiện kỹ năng giao tiếp, thuyết trình và đàm phán',
+      durationTime: 1500, // 25 hours
+      price: 49.99,
+      thumbnail:
+        'https://images.unsplash.com/photo-1557426272-fc759fdf7a8d?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3',
+      isBestSeller: true,
+      isRecommended: false,
+      categoryId: personalDevCategory.categoryId,
+    },
+    {
+      title: 'Quản lý thời gian và năng suất cá nhân',
+      description: 'Tối ưu hóa thời gian và nâng cao hiệu suất làm việc',
+      overview:
+        'Học các phương pháp quản lý thời gian, tổ chức công việc và tăng năng suất',
+      durationTime: 1200, // 20 hours
+      price: 39.99,
+      thumbnail:
+        'https://plus.unsplash.com/premium_photo-1663126649902-da96ec858a02?q=80&w=2071&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+      isBestSeller: false,
+      isRecommended: true,
+      categoryId: personalDevCategory.categoryId,
+    },
+
+    // Health courses
+    {
+      title: 'Yoga cho sức khỏe và tinh thần',
+      description: 'Các bài tập yoga từ cơ bản đến nâng cao',
+      overview:
+        'Khóa học hướng dẫn các tư thế, bài tập thở và thiền định trong yoga',
+      durationTime: 1800, // 30 hours
+      price: 49.99,
+      thumbnail:
+        'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=2020&auto=format&fit=crop&ixlib=rb-4.0.3',
+      isBestSeller: true,
+      isRecommended: false,
+      categoryId: healthCategory.categoryId,
+    },
+    {
+      title: 'Dinh dưỡng và chế độ ăn uống lành mạnh',
+      description: 'Hiểu về dinh dưỡng và xây dựng thói quen ăn uống khoa học',
+      overview:
+        'Học về các nhóm dưỡng chất, cách xây dựng thực đơn cân bằng và chế biến thực phẩm lành mạnh',
+      durationTime: 2100, // 35 hours
+      price: 59.99,
+      thumbnail:
+        'https://images.unsplash.com/photo-1490645935967-10de6ba17061?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3',
+      isBestSeller: false,
+      isRecommended: true,
+      categoryId: healthCategory.categoryId,
+    },
+
+    // Music courses
+    {
+      title: 'Học đàn guitar cho người mới bắt đầu',
+      description: 'Từ cơ bản đến có thể chơi được các bài hát đơn giản',
+      overview:
+        'Khóa học hướng dẫn các kỹ thuật cơ bản, hợp âm và cách chơi nhiều thể loại nhạc trên guitar',
+      durationTime: 2400, // 40 hours
+      price: 69.99,
+      thumbnail:
+        'https://images.unsplash.com/photo-1471478331149-c72f17e33c73?q=80&w=2069&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+      isBestSeller: true,
+      isRecommended: false,
+      categoryId: musicCategory.categoryId,
+    },
+    {
+      title: 'Sản xuất âm nhạc với FL Studio',
+      description: 'Học cách sáng tác và sản xuất nhạc trên máy tính',
+      overview:
+        'Khóa học giúp bạn làm chủ phần mềm FL Studio để tạo beat, mix và master các bản nhạc',
+      durationTime: 3600, // 60 hours
+      price: 89.99,
+      thumbnail:
+        'https://plus.unsplash.com/premium_photo-1683140707316-42df87760f3f?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+      isBestSeller: false,
+      isRecommended: true,
+      categoryId: musicCategory.categoryId,
+    },
+
+    // Language courses
+    {
+      title: 'Tiếng Anh giao tiếp cho người mới bắt đầu',
+      description: 'Phát triển kỹ năng giao tiếp tiếng Anh cơ bản',
+      overview:
+        'Khóa học giúp bạn xây dựng nền tảng ngữ pháp, từ vựng và phát âm tiếng Anh',
+      durationTime: 3000, // 50 hours
+      price: 79.99,
+      thumbnail:
+        'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?q=80&w=2071&auto=format&fit=crop&ixlib=rb-4.0.3',
+      isBestSeller: true,
+      isRecommended: false,
+      categoryId: languageCategory.categoryId,
+    },
+    {
+      title: 'Tiếng Nhật cho người mới học',
+      description: 'Học tiếng Nhật từ con số 0',
+      overview:
+        'Khóa học dạy bảng chữ cái, ngữ pháp cơ bản và giao tiếp tiếng Nhật hàng ngày',
+      durationTime: 3600, // 60 hours
+      price: 89.99,
+      thumbnail:
+        'https://images.unsplash.com/photo-1528164344705-47542687000d?q=80&w=2069&auto=format&fit=crop&ixlib=rb-4.0.3',
+      isBestSeller: false,
+      isRecommended: true,
+      categoryId: languageCategory.categoryId,
+    },
+
+    // Science courses
+    {
+      title: 'Khoa học dữ liệu cho người mới bắt đầu',
+      description: 'Nhập môn về thống kê, phân tích dữ liệu và mô hình dự đoán',
+      overview:
+        'Khóa học giới thiệu các nguyên lý và công cụ cơ bản trong khoa học dữ liệu',
+      durationTime: 3600, // 60 hours
+      price: 99.99,
+      thumbnail:
+        'https://images.unsplash.com/photo-1666875753105-c63a6f3bdc86?q=80&w=2073&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+      isBestSeller: true,
+      isRecommended: false,
+      categoryId: scienceCategory.categoryId,
+    },
+    {
+      title: 'Vật lý lượng tử cho người không chuyên',
+      description: 'Hiểu về các nguyên lý cơ bản của vật lý lượng tử',
+      overview:
+        'Khóa học giải thích các khái niệm phức tạp của vật lý lượng tử bằng ngôn ngữ đơn giản',
+      durationTime: 2400, // 40 hours
+      price: 79.99,
+      thumbnail:
+        'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3',
+      isBestSeller: false,
+      isRecommended: true,
+      categoryId: scienceCategory.categoryId,
+    },
+
+    // Math courses
+    {
+      title: 'Toán cao cấp cho đại học',
+      description: 'Giải tích, đại số tuyến tính và phương trình vi phân',
+      overview:
+        'Khóa học cung cấp nền tảng toán học cần thiết cho sinh viên đại học',
+      durationTime: 4200, // 70 hours
+      price: 89.99,
+      thumbnail:
+        'https://plus.unsplash.com/premium_photo-1724800663657-3e57bf4f622c?q=80&w=1926&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
     },
   ];
 

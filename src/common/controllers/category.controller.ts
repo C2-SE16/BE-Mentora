@@ -61,10 +61,11 @@ export class CategoryController {
   @Get('/:categoryId/courses')
   async getCoursesByCategory(@Param('categoryId') categoryId: string) {
     try {
-      const courses = await this.categoryService.getCoursesByCategory(categoryId);
+      const courses =
+        await this.categoryService.getCoursesByCategory(categoryId);
       return {
         success: true,
-        data: courses,
+        courses,
         message: 'Courses retrieved successfully',
       };
     } catch (error) {
