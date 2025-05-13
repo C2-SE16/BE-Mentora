@@ -9,7 +9,7 @@ async function bootstrap() {
 
   // Bật CORS để cho phép truy cập từ bên ngoài
   app.enableCors({
-    origin: true, // Cho phép tất cả các origin, trong môi trường production nên giới hạn cụ thể
+    origin: ['http://localhost:4000', 'http://localhost:3000'], // Cho phép cả port 3000 và 4000
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });

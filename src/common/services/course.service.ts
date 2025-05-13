@@ -19,14 +19,13 @@ import { ElasticsearchService } from './elasticsearch.service';
 import { SearchCourseDto } from '../dto/search-course.dto';
 import { CourseSearchResult } from '../interfaces/course.interface';
 import { UpdateCourseBasicDto } from '../dto/update-course-basic.dto';
-import { VoucherService } from './voucher.service';
+import { GetCoursesQueryDto } from '../dto/course.dto';
 
 @Injectable()
 export class CourseService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly elasticsearchService: ElasticsearchService,
-    private readonly voucherService: VoucherService,
   ) {}
 
   createCourse(body: CreateCourseDto) {
@@ -48,13 +47,7 @@ export class CourseService {
   }
 
   getCourse() {
-    return this.prismaService.tbl_courses.findMany().then((courses) => {
-      return courses.map((course) => ({
-        ...course,
-        price: course.price ? Number(course.price) : null,
-        rating: course.rating ? Number(Number(course.rating).toFixed(1)) : null,
-      }));
-    });
+    return this.prismaService.tbl_courses.findMany();
   }
 
   async getCourseById(courseId: string) {
@@ -287,7 +280,7 @@ export class CourseService {
       durationTime: course.durationTime,
       price: course.price ? Number(course.price) : 0,
       approved: course.approved,
-      rating: course.rating ? Number(Number(course.rating).toFixed(1)) : 0,
+      rating: course.rating ? Number(course.rating) : 0,
       comment: course.comment,
       thumbnail: course.thumbnail,
       createdAt: course.createdAt,
@@ -670,7 +663,7 @@ export class CourseService {
         updatedAt: course.updatedAt,
         categories: course.tbl_course_categories.map((category) => ({
           categoryId: category.categoryId,
-          name: category.tbl_categories?.categoryType,
+          name: category.tbl_categories?.name,
         })),
         instructor: course.tbl_instructors
           ? {
@@ -746,7 +739,7 @@ export class CourseService {
         (topic) =>
           new HomepageTopicEntity({
             id: topic.categoryId,
-            name: topic.categoryType,
+            name: topic.name,
             courseCount: topic.tbl_course_categories.length,
           }),
       );
@@ -787,43 +780,13 @@ export class CourseService {
           }),
       );
 
-      // Sau khi lấy danh sách khóa học, cần lấy thông tin giảm giá
-      const courseIds = [
-        ...recommendedCourses.map((course) => course.courseId),
-        ...bestSellerCourses.map((course) => course.courseId),
-      ];
-
-      // Sử dụng phương thức getDiscountedCoursesInfo để lấy thông tin giảm giá
-      const discountedCoursesInfo =
-        await this.voucherService.getDiscountedCoursesInfo(courseIds);
-
-      // Tạo map để dễ dàng tra cứu thông tin giảm giá
-      const discountMap = new Map();
-      discountedCoursesInfo.forEach((course) => {
-        discountMap.set(course.courseId, {
-          bestVoucher: course.bestVoucher,
-          discountedPrice: course.bestVoucher
-            ? Number(course.price) -
-              Number(course.bestVoucher.calculatedDiscount)
-            : null,
-        });
-      });
-
-      // Format kết quả với thông tin giảm giá
-      const formattedRecommendedCourses = recommendedCourses.map((course) => {
-        const discount = discountMap.get(course.courseId);
-        return this.formatCourseForHomepage(course, discount);
-      });
-
-      const formattedBestSellerCourses = bestSellerCourses.map((course) => {
-        const discount = discountMap.get(course.courseId);
-        return this.formatCourseForHomepage(course, discount);
-      });
-
-      // Trả về kết quả
       return {
-        recommendedCourses: formattedRecommendedCourses,
-        bestSellerCourses: formattedBestSellerCourses,
+        recommendedCourses: recommendedCourses.map((course) =>
+          this.formatCourseForHomepage(course),
+        ),
+        bestSellerCourses: bestSellerCourses.map((course) =>
+          this.formatCourseForHomepage(course),
+        ),
         topics: formattedTopics,
         mentors: formattedMentors,
       };
@@ -835,7 +798,6 @@ export class CourseService {
 
   private formatCourseForHomepage(
     course: HomepageCourse,
-    discountInfo?: { bestVoucher: any; discountedPrice: number },
   ): HomepageCourseEntity {
     // Calculate average rating
     const reviews = course.tbl_course_reviews || [];
@@ -857,12 +819,7 @@ export class CourseService {
 
     // Calculate prices
     const currentPrice = course.price?.toNumber() || 100000;
-    // Sử dụng giá đã giảm nếu có
-    const discountedPrice = discountInfo?.discountedPrice;
-    // Hiển thị giá gốc nếu có giảm giá, ngược lại tính theo quy tắc hiện tại
-    const originalPrice = discountedPrice
-      ? currentPrice
-      : Math.round(currentPrice * 1.2);
+    const originalPrice = Math.round(currentPrice * 1.2); // Example discount calculation
 
     // Get categories
     const categories =
@@ -877,9 +834,7 @@ export class CourseService {
       instructor: instructor,
       rating: averageRating,
       reviews: totalReviews,
-      currentPrice: discountedPrice
-        ? `₫${discountedPrice.toLocaleString()}`
-        : `₫${currentPrice.toLocaleString()}`,
+      currentPrice: `₫${currentPrice.toLocaleString()}`,
       originalPrice: `₫${originalPrice.toLocaleString()}`,
       isBestSeller: course.isBestSeller || false,
       image: course.thumbnail || '',
@@ -888,13 +843,6 @@ export class CourseService {
       totalHours: Math.round(course.durationTime || 600) / 60 || 10,
       description: course.description || 'Không có mô tả khóa học',
       categories: categories,
-      hasDiscount: !!discountedPrice,
-      discountPercentage: discountInfo?.bestVoucher
-        ? Math.round(
-            (discountInfo.bestVoucher.calculatedDiscount / currentPrice) * 100,
-          )
-        : undefined,
-      voucherCode: discountInfo?.bestVoucher?.code || null,
     });
   }
 
@@ -936,5 +884,172 @@ export class CourseService {
         updatedAt: new Date(),
       },
     });
+  }
+
+  async getCourses(query: GetCoursesQueryDto) {
+    const { page = 1, limit = 10, search, sortBy, sortOrder } = query;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.tbl_coursesWhereInput = search
+      ? {
+          OR: [
+            { title: { contains: search, mode: Prisma.QueryMode.insensitive } },
+            {
+              description: {
+                contains: search,
+                mode: Prisma.QueryMode.insensitive,
+              },
+            },
+          ],
+        }
+      : {};
+
+    const [courses, total] = await Promise.all([
+      this.prismaService.tbl_courses.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: {
+          [sortBy as string]: sortOrder,
+        },
+        include: {
+          tbl_instructors: {
+            include: {
+              tbl_users: {
+                select: {
+                  userId: true,
+                  fullName: true,
+                  avatar: true,
+                },
+              },
+            },
+          },
+          tbl_course_categories: {
+            include: {
+              tbl_categories: {
+                select: {
+                  categoryId: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      }),
+      this.prismaService.tbl_courses.count({ where }),
+    ]);
+
+    const formattedCourses = courses.map((course) => ({
+      courseId: course.courseId,
+      title: course.title,
+      description: course.description,
+      thumbnail: course.thumbnail,
+      price: course.price ? Number(course.price) : 0,
+      createdAt: course.createdAt,
+      updatedAt: course.updatedAt,
+      user: course.tbl_instructors?.tbl_users
+        ? {
+            userId: course.tbl_instructors.tbl_users.userId,
+            fullName: course.tbl_instructors.tbl_users.fullName,
+            avatar: course.tbl_instructors.tbl_users.avatar,
+          }
+        : null,
+      category: course.tbl_course_categories[0]?.tbl_categories
+        ? {
+            categoryId:
+              course.tbl_course_categories[0].tbl_categories.categoryId,
+            name: course.tbl_course_categories[0].tbl_categories.name,
+          }
+        : null,
+    }));
+
+    return {
+      data: formattedCourses,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async updateCourseStatus(courseId: string, approved: string) {
+    const course = await this.prismaService.tbl_courses.findUnique({
+      where: { courseId },
+    });
+
+    if (!course) {
+      throw new Error('Course not found');
+    }
+
+    return this.prismaService.tbl_courses.update({
+      where: { courseId },
+      data: {
+        approved: approved as 'PENDING' | 'APPROVED' | 'REJECTED',
+        updatedAt: new Date(),
+      },
+    });
+  }
+
+  async getCoursesByCategory(categoryId: string) {
+    try {
+      const courses = await this.prismaService.tbl_categories.findUnique({
+        where: { categoryId },
+        include: {
+          tbl_course_categories: {
+            include: {
+              tbl_courses: {
+                include: {
+                  tbl_instructors: {
+                    include: {
+                      tbl_users: true,
+                    },
+                  },
+                  tbl_course_reviews: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!courses) {
+        throw new Error('Category not found');
+      }
+
+      return {
+        success: true,
+        data: courses.tbl_course_categories
+          .filter((cc) => cc.tbl_courses !== null)
+          .map((cc) => {
+            const course = cc.tbl_courses!;
+            return {
+              courseId: course.courseId,
+              title: course.title,
+              description: course.description,
+              overview: course.overview,
+              durationTime: course.durationTime,
+              price: course.price ? Number(course.price) : 0,
+              approved: course.approved,
+              rating: course.rating ? Number(course.rating) : 0,
+              thumbnail: course.thumbnail,
+              createdAt: course.createdAt,
+              updatedAt: course.updatedAt,
+              instructor: course.tbl_instructors
+                ? {
+                    instructorId: course.tbl_instructors.instructorId,
+                    name: course.tbl_instructors.tbl_users?.fullName,
+                    avatar: course.tbl_instructors.tbl_users?.avatar,
+                  }
+                : null,
+              reviewCount: course.tbl_course_reviews.length,
+            };
+          }),
+        message: 'Lấy danh sách khóa học theo danh mục thành công',
+      };
+    } catch (error) {
+      throw new Error('Không thể lấy danh sách khóa học theo danh mục');
+    }
   }
 }
