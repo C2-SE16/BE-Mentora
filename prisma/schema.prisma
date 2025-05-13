@@ -408,6 +408,14 @@ enum category_enum {
   MARKETING
   FINANCE
   BUSSINESS
+  DESIGN
+  LIFESTYLE
+  PERSONAL_DEVELOPMENT
+  HEALTH
+  MUSIC
+  LANGUAGE
+  SCIENCE
+  MATH
 }
 
 enum payment_enum {

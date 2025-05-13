@@ -200,8 +200,27 @@ export class CategoryService {
           },
         });
 
-      // Trả về danh sách các khóa học
-      return coursesInCategory.map((item) => item.tbl_courses);
+      const formattedCoursesInCategory = coursesInCategory.map((item) => {
+        if (!item.tbl_courses) return item;
+
+        const formattedCourse = {
+          ...item,
+          tbl_courses: {
+            ...item.tbl_courses,
+            price: item.tbl_courses.price
+              ? Number(item.tbl_courses.price)
+              : 0,
+            rating: item.tbl_courses.rating
+              ? Number(Number(item.tbl_courses.rating).toFixed(1))
+              : 0,
+          },
+        };
+
+        return formattedCourse;
+      });
+
+
+      return formattedCoursesInCategory;
     } catch (error) {
       console.error(
         `Error fetching courses for category ${categoryId}:`,

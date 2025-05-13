@@ -8,6 +8,8 @@ import {
   Delete,
   Query,
   UseGuards,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { CategoryService } from '../services/category.service';
 import { CreateCategoryDto } from '../dto/category/create-category.dto';
@@ -57,7 +59,55 @@ export class CategoryController {
   }
 
   @Get(':id/courses')
-  async getCoursesByCategory(@Param('id') id: string) {
+  async getCoursesByCategory2(@Param('id') id: string) {
     return this.categoryService.getCoursesByCategory(id);
+  }
+
+  @Get('/:categoryId')
+  async getCategoryById(@Param('categoryId') categoryId: string) {
+    try {
+      const category = await this.categoryService.getCategoryById(categoryId);
+
+      if (!category) {
+        throw new HttpException('Category not found', HttpStatus.NOT_FOUND);
+      }
+
+      return {
+        success: true,
+        data: category,
+        message: 'Category retrieved successfully',
+      };
+    } catch (error) {
+      throw new HttpException(
+        {
+          success: false,
+          message: 'Failed to retrieve category',
+          error: error instanceof Error ? error.message : 'Unknown error',
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('/:categoryId/courses')
+  async getCoursesByCategory(@Param('categoryId') categoryId: string) {
+    try {
+      const courses =
+        await this.categoryService.getCoursesByCategory(categoryId);
+      return {
+        success: true,
+        courses,
+        message: 'Courses retrieved successfully',
+      };
+    } catch (error) {
+      throw new HttpException(
+        {
+          success: false,
+          message: 'Failed to retrieve courses for this category',
+          error: error instanceof Error ? error.message : 'Unknown error',
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }
