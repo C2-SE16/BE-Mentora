@@ -30,7 +30,10 @@ model tbl_cart_items {
 
 model tbl_categories {
   categoryId            String                  @id @db.Uuid
-  categoryType          category_enum?
+  name                  String?                 @db.VarChar
+  description           String?
+  createdAt            DateTime?               @db.Timestamp(6)
+  updatedAt            DateTime?               @db.Timestamp(6)
   tbl_course_categories tbl_course_categories[]
 }
 

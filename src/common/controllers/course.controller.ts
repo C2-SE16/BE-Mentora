@@ -11,23 +11,21 @@ import {
   HttpCode,
   ValidationPipe,
   UseGuards,
+  Put,
 } from '@nestjs/common';
 import { CourseService } from '../services/course.service';
 import { CreateCourseDto } from '../dto/course.dto';
 import { CreateSimpleCourseDto } from '../dto/create-course.dto';
 import { UpdateCourseDetailsDto } from '../dto/update-course-details.dto';
 import { SearchCourseDto } from '../dto/search-course.dto';
-import { VoucherService } from '../services/voucher.service';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
 import { UpdateCourseBasicDto } from '../dto/update-course-basic.dto';
+import { GetCoursesQueryDto } from '../dto/course.dto';
 
 @Controller('courses')
 export class CourseController {
-  constructor(
-    private readonly courseService: CourseService,
-    private readonly voucherService: VoucherService,
-  ) {}
+  constructor(private readonly courseService: CourseService) {}
 
   @Get('search')
   async searchCourses(
@@ -88,6 +86,52 @@ export class CourseController {
         {
           success: false,
           message: 'Failed to get homepage courses',
+          error: (error as Error).message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Put('/:courseId/status')
+  @UseGuards(JwtAuthGuard)
+  async updateCourseStatus(
+    @Param('courseId') courseId: string,
+    @Body('approved') approved: string,
+  ) {
+    try {
+      console.log(approved);
+      const course = await this.courseService.getCourseById(courseId);
+      console.log(course);
+      if (!course) {
+        throw new HttpException(
+          {
+            success: false,
+            message: 'Course not found',
+          },
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      const updatedCourse = await this.courseService.updateCourseStatus(
+        courseId,
+        approved,
+      );
+
+      return {
+        success: true,
+        data: updatedCourse,
+        message: 'Course status updated successfully',
+      };
+    } catch (error: unknown) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      throw new HttpException(
+        {
+          success: false,
+          message: 'Failed to update course status',
           error: (error as Error).message,
         },
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -156,8 +200,8 @@ export class CourseController {
   }
 
   @Get()
-  getCourse() {
-    return this.courseService.getCourse();
+  async getCourses(@Query() query: GetCoursesQueryDto) {
+    return this.courseService.getCourses(query);
   }
 
   @Delete('/:courseId')
@@ -319,19 +363,12 @@ export class CourseController {
     }
   }
 
-  @Get('/:courseId/applicable-vouchers')
-  async getApplicableVouchersForCourse(@Param('courseId') courseId: string) {
-    return this.voucherService.getApplicableVouchersForCourse(courseId);
-  }
-
-
   @Get('/detail/:courseId')
   async getCourseDetail(@Param('courseId') courseId: string) {
     try {
       const courseDetails =
         await this.courseService.getCourseWithDetails(courseId);
-      const { data: voucherInfo } =
-        await this.voucherService.getApplicableVouchersForCourse(courseId);
+
       if (!courseDetails) {
         throw new HttpException(
           {
@@ -344,13 +381,7 @@ export class CourseController {
 
       return {
         success: true,
-        data: {
-          ...courseDetails,
-          bestVoucher: voucherInfo.bestVoucher,
-          discountedPrice: voucherInfo?.bestVoucher
-            ? voucherInfo.bestVoucher.finalPrice
-            : null,
-        },
+        data: courseDetails,
         message: 'Lấy thông tin khóa học thành công',
       };
     } catch (error: unknown) {
@@ -450,5 +481,10 @@ export class CourseController {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  @Get('category/:categoryId')
+  async getCoursesByCategory(@Param('categoryId') categoryId: string) {
+    return this.courseService.getCoursesByCategory(categoryId);
   }
 }

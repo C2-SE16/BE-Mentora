@@ -6,8 +6,9 @@ import {
   Min,
   MaxLength,
   IsUUID,
+  IsEnum,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 
 export class CreateCourseDto {
   @IsNotEmpty()
@@ -43,4 +44,39 @@ export class CreateCourseDto {
 export class CreateSearchHistoryDto {
   @IsNotEmpty()
   content: string;
+}
+
+export enum CourseSortBy {
+  CREATED_AT = 'createdAt',
+  UPDATED_AT = 'updatedAt',
+  TITLE = 'title',
+}
+
+export enum SortOrder {
+  ASC = 'asc',
+  DESC = 'desc',
+}
+
+export class GetCoursesQueryDto {
+  @IsOptional()
+  @IsNumber()
+  @Transform(({ value }) => parseInt(value))
+  page?: number = 1;
+
+  @IsOptional()
+  @IsNumber()
+  @Transform(({ value }) => parseInt(value))
+  limit?: number = 10;
+
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @IsOptional()
+  @IsEnum(CourseSortBy)
+  sortBy?: CourseSortBy = CourseSortBy.CREATED_AT;
+
+  @IsOptional()
+  @IsEnum(SortOrder)
+  sortOrder?: SortOrder = SortOrder.DESC;
 }

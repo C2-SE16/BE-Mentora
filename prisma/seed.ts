@@ -85,19 +85,37 @@ async function main() {
     },
   });
 
-  const itCategory = await prisma.tbl_categories.create({
-    data: {
-      categoryId: uuidv4(),
-      categoryType: 'INFORMATION_TECHNOLOGY',
-    },
-  });
-
-  const marketingCategory = await prisma.tbl_categories.create({
-    data: {
-      categoryId: uuidv4(),
-      categoryType: 'MARKETING',
-    },
-  });
+  // Seed categories
+  const categories = await Promise.all([
+    prisma.tbl_categories.create({
+      data: {
+        categoryId: uuidv4(),
+        name: 'Công nghệ thông tin',
+        description: 'Các khóa học về lập trình, công nghệ thông tin',
+      },
+    }),
+    prisma.tbl_categories.create({
+      data: {
+        categoryId: uuidv4(),
+        name: 'Marketing',
+        description: 'Các khóa học về marketing, quảng cáo',
+      },
+    }),
+    prisma.tbl_categories.create({
+      data: {
+        categoryId: uuidv4(),
+        name: 'Tài chính',
+        description: 'Các khóa học về tài chính, đầu tư',
+      },
+    }),
+    prisma.tbl_categories.create({
+      data: {
+        categoryId: uuidv4(),
+        name: 'Kinh doanh',
+        description: 'Các khóa học về kinh doanh, khởi nghiệp',
+      },
+    }),
+  ]);
 
   const course1 = await prisma.tbl_courses.create({
     data: {
@@ -292,7 +310,7 @@ async function main() {
   await prisma.tbl_course_categories.create({
     data: {
       courseCategoryId: uuidv4(),
-      categoryId: itCategory.categoryId,
+      categoryId: categories[0].categoryId,
       courseId: course1.courseId,
     },
   });
@@ -418,7 +436,7 @@ async function main() {
         'https://plus.unsplash.com/premium_vector-1734528979745-eaa10d557eed?q=80&w=2148&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
       isBestSeller: true,
       isRecommended: false,
-      categoryId: itCategory.categoryId,
+      categoryId: categories[0].categoryId,
     },
     {
       title: 'Digital Marketing Fundamentals',
@@ -431,7 +449,7 @@ async function main() {
         'https://plus.unsplash.com/premium_vector-1730731379517-dd0bc0f201cf?q=80&w=2148&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
       isBestSeller: false,
       isRecommended: true,
-      categoryId: marketingCategory.categoryId,
+      categoryId: categories[1].categoryId,
     },
     {
       title: 'Mobile App Development with React Native',
@@ -444,7 +462,7 @@ async function main() {
         'https://cdn.hashnode.com/res/hashnode/image/upload/v1681468530991/3ff30cea-325d-412e-8c2d-7e091df05b68.png?w=1600&h=840&fit=crop&crop=entropy&auto=compress,format&format=webp',
       isBestSeller: true,
       isRecommended: true,
-      categoryId: itCategory.categoryId,
+      categoryId: categories[0].categoryId,
     },
   ];
 
@@ -485,7 +503,7 @@ async function main() {
         'https://images.unsplash.com/photo-1501504905252-473c47e087f8?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3',
       isBestSeller: false,
       isRecommended: true,
-      categoryId: itCategory.categoryId,
+      categoryId: categories[0].categoryId,
     },
     {
       title: 'Phát triển ứng dụng Web với NodeJS và Express',
@@ -498,7 +516,7 @@ async function main() {
         'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3',
       isBestSeller: false,
       isRecommended: true,
-      categoryId: itCategory.categoryId,
+      categoryId: categories[0].categoryId,
     },
     {
       title: 'Content Marketing chuyên nghiệp',
@@ -511,7 +529,7 @@ async function main() {
         'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3',
       isBestSeller: false,
       isRecommended: true,
-      categoryId: marketingCategory.categoryId,
+      categoryId: categories[1].categoryId,
     },
     {
       title: 'UI/UX Design: Từ cơ bản đến nâng cao',
@@ -524,7 +542,7 @@ async function main() {
         'https://images.unsplash.com/photo-1581291518633-83b4ebd1d83e?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3',
       isBestSeller: false,
       isRecommended: true,
-      categoryId: itCategory.categoryId,
+      categoryId: categories[0].categoryId,
     },
   ];
 
@@ -541,7 +559,7 @@ async function main() {
         'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?q=80&w=2069&auto=format&fit=crop&ixlib=rb-4.0.3',
       isBestSeller: true,
       isRecommended: false,
-      categoryId: itCategory.categoryId,
+      categoryId: categories[0].categoryId,
     },
     {
       title: 'Python cho người mới bắt đầu',
@@ -554,7 +572,7 @@ async function main() {
         'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?q=80&w=2069&auto=format&fit=crop&ixlib=rb-4.0.3',
       isBestSeller: true,
       isRecommended: false,
-      categoryId: itCategory.categoryId,
+      categoryId: categories[0].categoryId,
     },
     {
       title: 'Digital Advertising và Facebook Ads',
@@ -567,7 +585,7 @@ async function main() {
         'https://images.unsplash.com/photo-1563986768609-322da13575f3?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3',
       isBestSeller: true,
       isRecommended: false,
-      categoryId: marketingCategory.categoryId,
+      categoryId: categories[1].categoryId,
     },
     {
       title: 'Phát triển Game với Unity 3D',
@@ -580,7 +598,7 @@ async function main() {
         'https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=2071&auto=format&fit=crop&ixlib=rb-4.0.3',
       isBestSeller: true,
       isRecommended: false,
-      categoryId: itCategory.categoryId,
+      categoryId: categories[0].categoryId,
     },
     {
       title: 'DevOps và CI/CD Pipeline',
@@ -593,7 +611,7 @@ async function main() {
         'https://images.unsplash.com/photo-1633412802994-5c058f151b66?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3',
       isBestSeller: true,
       isRecommended: false,
-      categoryId: itCategory.categoryId,
+      categoryId: categories[0].categoryId,
     },
   ];
 
