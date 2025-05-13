@@ -5,9 +5,9 @@ export class AddToCartDto {
   @IsUUID()
   courseId: string;
 
-  // @IsOptional()
-  // @IsString()
-  // userId?: string;
+  @IsOptional()
+  @IsString()
+  userId?: string;
 }
 
 export class RemoveFromCartDto {

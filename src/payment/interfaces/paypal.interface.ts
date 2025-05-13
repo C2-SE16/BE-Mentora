@@ -21,6 +21,9 @@ export interface PaypalPaymentResponse {
   paymentId: string;
   approvalUrl: string;
   status: string;
+  totalAmountUSD?: number;
+  exchangeRate?: number;
+  originalCurrency?: string;
 }
 
 export interface PaypalPayoutItem {

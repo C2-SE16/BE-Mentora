@@ -2,6 +2,8 @@ export interface CartItem {
   courseId: string;
   name: string;
   price: number;
+  currencyCode?: string;
+  priceUSD?: number;
 }
 
 export interface PaymentResult {
@@ -22,11 +24,15 @@ export interface OrderRecord {
   orderId: string;
   userId: string;
   totalAmount: number;
+  currencyCode?: string;
+  exchangeRate?: number;
+  totalAmountUSD?: number;
   paymentId: string;
-  status: 'PENDING' | 'COMPLETED' | 'FAILED';
+  status: 'PENDING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
   items: {
     courseId: string;
     price: number;
+    priceUSD?: number;
   }[];
   createdAt: Date;
   completedAt?: Date;

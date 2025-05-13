@@ -11,13 +11,15 @@ import { CustomerPaymentService } from './services/customer-payment.service';
 import { CustomerPaymentController } from './controllers/customer-payment.controller';
 import { RedisModule } from '../common/cache/redis.module';
 import { CartModule } from '../common/modules/cart.module';
+import { CommonModule } from '../common/common.module';
 
 @Module({
   imports: [
     ConfigModule,
     PrismaModule,
     RedisModule,
-    CartModule
+    CartModule,
+    CommonModule
   ],
   controllers: [
     PaymentController,

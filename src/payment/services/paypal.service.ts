@@ -19,6 +19,7 @@ export class PaypalService {
   private accessToken: string;
   private tokenExpiry: Date;
   private adminPaypalEmail: string;
+  private exchangeRateApiKey: string = '';
 
   constructor(private configService: ConfigService) {
     this.initPaypalConfig();
@@ -29,6 +30,7 @@ export class PaypalService {
     this.clientId = this.configService.get<string>('PAYPAL_CLIENT_ID', '');
     this.clientSecret = this.configService.get<string>('PAYPAL_CLIENT_SECRET', '');
     this.adminPaypalEmail = this.configService.get<string>('PAYPAL_ADMIN_EMAIL', '');
+    this.exchangeRateApiKey = this.configService.get<string>('EXCHANGE_RATE_API_KEY', '');
     
     if (!this.clientId || !this.clientSecret) {
       this.logger.error('Thiếu thông tin xác thực PayPal. Vui lòng kiểm tra biến môi trường.');
@@ -37,6 +39,63 @@ export class PaypalService {
     this.baseUrl = mode === 'sandbox' 
       ? 'https://api-m.sandbox.paypal.com'
       : 'https://api-m.paypal.com';
+  }
+
+  /**
+   * Chuyển đổi tiền tệ từ VND sang USD
+   * @param amountVND Số tiền VND cần chuyển đổi
+   * @returns Số tiền USD tương ứng
+   */
+  async convertVNDtoUSD(amountVND: number): Promise<number> {
+    try {
+      this.logger.log(`Bắt đầu chuyển đổi ${amountVND} VND sang USD`);
+      
+      let url = `https://api.exchangerate.host/convert?from=VND&to=USD&amount=${amountVND}`;
+      
+      // Thêm API key nếu có
+      if (this.exchangeRateApiKey) {
+        url += `&access_key=${this.exchangeRateApiKey}`;
+      }
+      
+      const response = await axios.get(url);
+      
+      // Kiểm tra trường hợp API không trả về success
+      if (response.data && typeof response.data.success !== 'undefined' && !response.data.success) {
+        this.logger.error(`Lỗi khi chuyển đổi tiền tệ: ${JSON.stringify(response.data)}`);
+        
+        // Sử dụng tỷ giá cố định nếu API không hoạt động (tỷ giá ước tính)
+        // 1 USD = khoảng 24,000 VND (tỷ giá có thể thay đổi)
+        const estimatedUSD = amountVND / 24000;
+        this.logger.warn(`Sử dụng tỷ giá ước tính: ${estimatedUSD} USD`);
+        return estimatedUSD;
+      }
+      
+      // Xử lý trường hợp API không trả về kết quả định dạng mong đợi
+      let amountUSD = 0;
+      if (response.data && response.data.result) {
+        amountUSD = response.data.result;
+      } else if (response.data && response.data.rates && response.data.rates.USD) {
+        // Đối với một số API exchangerate, có thể trả về định dạng khác
+        amountUSD = amountVND * response.data.rates.USD;
+      } else {
+        // Tỷ giá ước tính nếu không thể lấy từ API
+        amountUSD = amountVND / 24000;
+        this.logger.warn(`Không thể xác định kết quả từ API, sử dụng tỷ giá ước tính: ${amountUSD} USD`);
+      }
+      
+      this.logger.log(`Chuyển đổi thành công: ${amountVND} VND = ${amountUSD} USD`);
+      
+      return amountUSD;
+    } catch (error) {
+      this.logger.error(`Lỗi khi chuyển đổi tiền tệ: ${error.message}`);
+      
+      // Sử dụng tỷ giá cố định nếu có lỗi (tỷ giá ước tính)
+      // 1 USD = khoảng 24,000 VND (tỷ giá có thể thay đổi)
+      const estimatedUSD = amountVND / 24000;
+      this.logger.warn(`Sử dụng tỷ giá ước tính: ${estimatedUSD} USD`);
+      
+      return estimatedUSD;
+    }
   }
 
   /**
@@ -129,20 +188,41 @@ export class PaypalService {
 
       const accessToken = await this.getAccessToken();
       
-      // Làm tròn giá trị thanh toán đến 2 chữ số thập phân
-      const formattedTotal = parseFloat(totalAmount.toFixed(2));
-      this.logger.log(`Tổng giá trị đơn hàng sau khi làm tròn: ${formattedTotal}`);
+      // Chuyển đổi giá tiền từ VND sang USD
+      const convertedItems = await Promise.all(items.map(async (item) => {
+        const priceUSD = await this.convertVNDtoUSD(item.price);
+        return {
+          ...item,
+          priceUSD: priceUSD
+        };
+      }));
+      
+      // Tính tổng USD từ các item đã chuyển đổi
+      const totalUSD = convertedItems.reduce((sum, item) => sum + item.priceUSD, 0);
+      
+      // Tính tỷ giá trung bình
+      const exchangeRate = totalAmount / totalUSD;
+      this.logger.log(`Tỷ giá chuyển đổi trung bình: 1 USD = ${exchangeRate.toFixed(2)} VND`);
       
       // Tạo danh sách item trong PayPal
-      const purchaseItems = items.map(item => ({
+      const purchaseItems = convertedItems.map(item => ({
         name: item.name.substring(0, 127), // Giới hạn độ dài tên sản phẩm
         unit_amount: {
           currency_code: 'USD',
-          value: parseFloat(item.price.toFixed(2)).toString()
+          value: parseFloat(item.priceUSD.toFixed(2)).toString()
         },
         quantity: '1',
         category: 'DIGITAL_GOODS'
       }));
+      
+      // Tính lại tổng giá từ các item để đảm bảo không có sự khác biệt do làm tròn
+      const recalculatedTotal = purchaseItems.reduce((sum, item) => {
+        return sum + parseFloat(item.unit_amount.value);
+      }, 0);
+      
+      // Làm tròn lại tổng giá mới tính
+      const formattedTotal = parseFloat(recalculatedTotal.toFixed(2));
+      this.logger.log(`Tổng giá trị đơn hàng sau khi tính lại: ${formattedTotal} USD (từ ${totalAmount} VND)`);
       
       // Log dữ liệu gửi đi để debug
       const requestPayload = {
@@ -208,6 +288,9 @@ export class PaypalService {
         paymentId,
         approvalUrl,
         status,
+        totalAmountUSD: formattedTotal,
+        exchangeRate,
+        originalCurrency: 'VND'
       };
     } catch (error) {
       this.logger.error(`Lỗi khi tạo thanh toán PayPal cho khách hàng: ${error.message}`);
@@ -337,4 +420,4 @@ export class PaypalService {
       };
     }
   }
-} 
+}

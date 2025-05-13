@@ -105,22 +105,22 @@ model tbl_favorites {
 }
 
 model tbl_instructors {
-  instructorId   String        @id @db.Uuid
-  userId         String?       @db.Uuid
-  instructorName String?       @db.VarChar
-  bio            String?
-  profilePicture String?       @db.VarChar
-  experience     String?
-  average_rating Decimal?      @db.Decimal
-  isVerified     Boolean?
-  paypalEmail    String?       @db.VarChar
-  isPaypalVerified Boolean?    @default(false)
-  paypalVerificationToken String? @db.VarChar
-  paypalVerificationTokenExp DateTime? @db.Timestamp(6)
-  createdAt      DateTime?     @db.Timestamp(6)
-  updatedAt      DateTime?     @db.Timestamp(6)
-  tbl_courses    tbl_courses[]
-  tbl_users      tbl_users?    @relation(fields: [userId], references: [userId], onDelete: NoAction, onUpdate: NoAction)
+  instructorId               String        @id @db.Uuid
+  userId                     String?       @db.Uuid
+  bio                        String?
+  profilePicture             String?       @db.VarChar
+  experience                 String?
+  average_rating             Decimal?      @db.Decimal
+  isVerified                 Boolean?
+  createdAt                  DateTime?     @db.Timestamp(6)
+  updatedAt                  DateTime?     @db.Timestamp(6)
+  instructorName             String?       @db.VarChar
+  paypalEmail                String?       @db.VarChar
+  isPaypalVerified           Boolean?      @default(false)
+  paypalVerificationToken    String?       @db.VarChar
+  paypalVerificationTokenExp DateTime?     @db.Timestamp(6)
+  tbl_courses                tbl_courses[]
+  tbl_users                  tbl_users?    @relation(fields: [userId], references: [userId], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model tbl_modules {
@@ -157,37 +157,38 @@ model tbl_payment {
   transactionId     String?             @db.VarChar
   createdAt         DateTime?           @db.Timestamp(6)
   updatedAt         DateTime?           @db.Timestamp(6)
+  metadata          String?             @db.Text
   tbl_order_details tbl_order_details[]
   tbl_users         tbl_users?          @relation(fields: [userId], references: [userId], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model tbl_payment_temp {
-  tempId        String       @id @db.Uuid
-  paymentId     String?      @db.VarChar
-  orderId       String?      @db.Uuid
-  userId        String?      @db.Uuid
-  amount        Decimal?     @db.Decimal
-  status        String?      @db.VarChar
-  paymentData   String?      @db.Text
-  createdAt     DateTime?    @db.Timestamp(6)
-  expiresAt     DateTime?    @db.Timestamp(6)
+  tempId      String    @id @db.Uuid
+  paymentId   String?   @db.VarChar
+  orderId     String?   @db.Uuid
+  userId      String?   @db.Uuid
+  amount      Decimal?  @db.Decimal
+  status      String?   @db.VarChar
+  paymentData String?
+  createdAt   DateTime? @db.Timestamp(6)
+  expiresAt   DateTime? @db.Timestamp(6)
 }
 
 model tbl_users {
   userId                    String                      @id @db.Uuid
   email                     String?                     @db.VarChar
   password                  String?                     @db.VarChar
-  fullName                  String?                     @db.VarChar
   avatar                    String?
   role                      role_enum?
-  title                     String?                     @db.VarChar
-  description               String?                     @db.VarChar
   createdAt                 DateTime?                   @db.Timestamp(6)
   updatedAt                 DateTime?                   @db.Timestamp(6)
-  websiteLink               String?                     @db.VarChar
+  fullName                  String?                     @db.VarChar
   facebookLink              String?                     @db.VarChar
-  youtubeLink               String?                     @db.VarChar
   linkedinLink              String?                     @db.VarChar
+  websiteLink               String?                     @db.VarChar
+  youtubeLink               String?                     @db.VarChar
+  description               String?                     @db.VarChar
+  title                     String?                     @db.VarChar
   isEmailVerified           Boolean?                    @default(false)
   verificationEmailToken    String?                     @db.VarChar
   verificationEmailTokenExp DateTime?                   @db.Timestamp(6)
@@ -197,13 +198,13 @@ model tbl_users {
   tbl_course_enrollments    tbl_course_enrollments[]
   tbl_course_reviews        tbl_course_reviews[]
   tbl_curriculum_progress   tbl_curriculum_progress[]
+  tbl_disscussing           tbl_disscussing[]
   tbl_favorites             tbl_favorites[]
   tbl_instructors           tbl_instructors[]
   tbl_lecture_progress      tbl_lecture_progress[]
   tbl_payment               tbl_payment[]
   tbl_quiz_attempts         tbl_quiz_attempts[]
   tbl_voucher_usage_history tbl_voucher_usage_history[]
-  tbl_disscussing           tbl_disscussing[]
 }
 
 model tbl_voucher_courses {
@@ -290,24 +291,22 @@ model tbl_curricula {
   updatedAt               DateTime?                 @db.Timestamp(6)
   tbl_modules             tbl_modules?              @relation(fields: [moduleId], references: [moduleId], onDelete: NoAction, onUpdate: NoAction)
   tbl_curriculum_progress tbl_curriculum_progress[]
+  tbl_disscussing         tbl_disscussing[]
   tbl_lectures            tbl_lectures[]
   tbl_quizzes             tbl_quizzes[]
-  tbl_disscussing         tbl_disscussing[]
 }
 
 model tbl_disscussing {
-  discussingId String   @id @default(uuid()) @db.Uuid
-  userId       String   @db.Uuid
-  curriculumId  String   @db.Uuid
+  discussingId String        @id @default(uuid()) @db.Uuid
+  userId       String        @db.Uuid
+  curriculumId String        @db.Uuid
   title        String?
-  content      String   
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
+  content      String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  curricula    tbl_curricula @relation(fields: [curriculumId], references: [curriculumId])
   user         tbl_users     @relation(fields: [userId], references: [userId])
-  curricula    tbl_curricula @relation(fields: [curriculumId], references: [curriculumId]) 
 }
-
 
 model tbl_curriculum_progress {
   progressId    String         @id @db.Uuid

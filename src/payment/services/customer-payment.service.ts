@@ -3,6 +3,7 @@ import { PrismaService } from '../../common/prisma/prisma.service';
 import { PaypalService } from './paypal.service';
 import { RedisService } from '../../common/cache/redis.service';
 import { CartService } from '../../common/services/cart.service';
+import { CourseEnrollmentService } from '../../common/services/course-enrollment.service';
 import { v4 as uuidv4 } from 'uuid';
 import { 
   CartItem, 
@@ -11,6 +12,12 @@ import {
   PaymentCaptureResult 
 } from '../interfaces/customer-payment.interface';
 import { InitiateCustomerPaymentDto, CaptureCustomerPaymentDto } from '../dto/customer-payment.dto';
+
+// Định nghĩa kiểu CartItem cho Redis
+interface RedisCartItem {
+  courseId: string;
+  selected: boolean;
+}
 
 @Injectable()
 export class CustomerPaymentService {
@@ -23,6 +30,7 @@ export class CustomerPaymentService {
     private readonly paypalService: PaypalService,
     private readonly redisService: RedisService,
     private readonly cartService: CartService,
+    private readonly courseEnrollmentService: CourseEnrollmentService,
   ) {
     // Kiểm tra kết nối Redis khi khởi tạo service
     this.checkRedisConnection();
@@ -169,6 +177,10 @@ export class CustomerPaymentService {
     return `${this.PAYMENT_DETAILS_PREFIX}${paymentId || ''}`;
   }
 
+  private getCartKey(userId: string): string {
+    return `cart:${userId}`;
+  }
+
   /**
    * Lấy thông tin giỏ hàng từ Redis và tính tổng tiền
    */
@@ -186,11 +198,12 @@ export class CustomerPaymentService {
     const items: CartItem[] = selectedCart.courses.map(course => ({
       courseId: course.courseId,
       name: course.title || 'Khóa học',
-      price: course.price ? Number(course.price) : 0
+      price: course.price ? Number(course.price) : 0,
+      currencyCode: 'VND'  // Thêm thông tin tiền tệ VND
     }));
 
     const total = items.reduce((sum, item) => sum + item.price, 0);
-    this.logger.log(`[REDIS-DEBUG] Lấy khóa học đã chọn thành công. Tổng số item: ${items.length}, Tổng tiền: ${total}`);
+    this.logger.log(`[REDIS-DEBUG] Lấy khóa học đã chọn thành công. Tổng số item: ${items.length}, Tổng tiền: ${total} VND`);
 
     return { items, total };
   }
@@ -217,7 +230,7 @@ export class CustomerPaymentService {
       // Lấy thông tin giỏ hàng từ Redis
       this.logger.log('Đang lấy thông tin giỏ hàng từ Redis...');
       const { items, total } = await this.getCartItemsAndTotal(userId);
-      this.logger.log(`Tổng số khóa học trong giỏ hàng: ${items.length}, Tổng tiền: ${total}`);
+      this.logger.log(`Tổng số khóa học trong giỏ hàng: ${items.length}, Tổng tiền: ${total} VND (sẽ được chuyển đổi sang USD khi thanh toán qua PayPal)`);
 
       if (total <= 0) {
         this.logger.error('Tổng giá trị giỏ hàng phải lớn hơn 0');
@@ -225,7 +238,7 @@ export class CustomerPaymentService {
       }
 
       // Tạo đơn hàng trên PayPal
-      this.logger.log('Đang tạo đơn hàng trên PayPal...');
+      this.logger.log('Đang tạo đơn hàng trên PayPal với chuyển đổi từ VND sang USD...');
       try {
         const paypalResult = await this.paypalService.createCustomerPayment(
           items,
@@ -239,16 +252,28 @@ export class CustomerPaymentService {
         const orderId = uuidv4();
         this.logger.log(`Tạo mã đơn hàng mới: ${orderId}`);
         
+        // Lấy giá USD và tỷ giá chuyển đổi
+        const exchangeRate = (paypalResult as any).exchangeRate || null;
+        const totalAmountUSD = (paypalResult as any).totalAmountUSD || null;
+        
+        if (exchangeRate && totalAmountUSD) {
+          this.logger.log(`Tỷ giá chuyển đổi: 1 USD = ${exchangeRate} VND, Tổng tiền: ${total} VND = ${totalAmountUSD} USD`);
+        }
+        
         // Lưu thông tin đơn hàng vào Redis
         const orderRecord: OrderRecord = {
           orderId,
           userId,
           totalAmount: total,
+          currencyCode: 'VND',
+          exchangeRate: exchangeRate,
+          totalAmountUSD: totalAmountUSD,
           paymentId: paypalResult.paymentId,
           status: 'PENDING',
           items: items.map(item => ({
             courseId: item.courseId,
-            price: item.price
+            price: item.price,
+            priceUSD: item.priceUSD
           })),
           createdAt: new Date(),
         };
@@ -289,7 +314,16 @@ export class CustomerPaymentService {
         }
 
         // Liên kết paymentId với orderId
-        const paymentDetails = { orderId, status: 'PENDING', createdAt: new Date() };
+        const paymentDetails = { 
+          orderId, 
+          status: 'PENDING', 
+          createdAt: new Date(),
+          currencyCode: 'VND',
+          totalAmount: total,
+          totalAmountUSD: totalAmountUSD,
+          exchangeRate: exchangeRate
+        };
+        
         this.logger.log(`[REDIS-DEBUG] Lưu thông tin liên kết paymentId-orderId. PaymentId: ${paypalResult.paymentId}, OrderId: ${orderId}, Chi tiết: ${JSON.stringify(paymentDetails)}`);
         
         const paymentDetailsKey = this.getPaymentDetailsKey(paypalResult.paymentId);
@@ -357,20 +391,96 @@ export class CustomerPaymentService {
       const paidCourseIds = items.map(item => item.courseId);
       this.logger.log(`Các khóa học đã thanh toán: ${paidCourseIds.join(', ')}`);
       
-      // Xóa các khóa học đã thanh toán khỏi giỏ hàng
-      const cartKey = `cart:${userId}`;
-      const currentCart = await this.redisService.get<string[]>(cartKey) || [];
+      if (!paidCourseIds.length) {
+        this.logger.warn('Không có khóa học nào để xóa khỏi giỏ hàng');
+        return;
+      }
       
-      // Lọc giỏ hàng để giữ lại các khóa học chưa thanh toán
-      const updatedCart = currentCart.filter(courseId => !paidCourseIds.includes(courseId));
+      // Cách 1: Sử dụng cartService để xóa khỏi cả database và Redis
+      try {
+        await this.cartService.removeCoursesFromDatabaseCart(userId, paidCourseIds);
+        this.logger.log(`[CÁCH 1] Đã xóa ${paidCourseIds.length} khóa học khỏi giỏ hàng bằng removeCoursesFromDatabaseCart`);
+      } catch (dbError) {
+        this.logger.error(`[CÁCH 1] Lỗi khi xóa khóa học khỏi database: ${dbError.message}`, dbError.stack);
+        
+        // Cách 2: Thử xóa trực tiếp từ Redis nếu Cách 1 thất bại
+        try {
+          // Xóa các khóa học đã thanh toán khỏi giỏ hàng trong Redis 
+          const cartKey = this.getCartKey(userId);
+          
+          // Lấy giỏ hàng hiện tại từ Redis
+          let currentCart = await this.redisService.get<any>(cartKey);
+          this.logger.log(`[CÁCH 2] Giỏ hàng hiện tại trong Redis: ${JSON.stringify(currentCart)}`);
+          
+          // Chuyển đổi giỏ hàng từ chuỗi JSON nếu cần
+          if (typeof currentCart === 'string') {
+            try {
+              currentCart = JSON.parse(currentCart);
+            } catch (e) {
+              this.logger.error(`[CÁCH 2] Lỗi khi phân tích chuỗi JSON: ${e.message}`);
+              currentCart = [];
+            }
+          } else if (!currentCart) {
+            currentCart = [];
+          }
+          
+          // Lọc giỏ hàng để giữ lại các khóa học chưa thanh toán
+          let updatedCart;
+          if (Array.isArray(currentCart) && currentCart.length > 0 && typeof currentCart[0] === 'object' && currentCart[0].courseId) {
+            // Định dạng là mảng các đối tượng { courseId: string, selected: boolean }
+            updatedCart = currentCart.filter(item => !paidCourseIds.includes(item.courseId));
+          } else if (Array.isArray(currentCart)) {
+            // Định dạng là mảng các chuỗi courseId
+            updatedCart = currentCart.filter(courseId => !paidCourseIds.includes(courseId));
+          } else {
+            updatedCart = [];
+          }
+          
+          this.logger.log(`[CÁCH 2] Giỏ hàng sau khi lọc: ${JSON.stringify(updatedCart)}`);
+          this.logger.log(`[CÁCH 2] Đã xóa ${Array.isArray(currentCart) ? currentCart.length - updatedCart.length : 0} khóa học khỏi giỏ hàng`);
+          
+          // Cập nhật giỏ hàng trong Redis
+          await this.redisService.set(cartKey, updatedCart);
+          
+          // Xóa cache voucher
+          try {
+            await this.redisService.del(`${cartKey}:voucher`);
+            this.logger.log(`[CÁCH 2] Đã xóa cache voucher cho giỏ hàng`);
+          } catch (voucherError) {
+            this.logger.error(`[CÁCH 2] Lỗi khi xóa cache voucher: ${voucherError.message}`);
+          }
+          
+          // Kiểm tra xem giỏ hàng đã được cập nhật chưa
+          const updatedCartCheck = await this.redisService.get<any>(cartKey);
+          this.logger.log(`[CÁCH 2] Giỏ hàng sau khi cập nhật trong Redis: ${JSON.stringify(updatedCartCheck)}`);
+        } catch (redisError) {
+          this.logger.error(`[CÁCH 2] Lỗi khi xóa trực tiếp từ Redis: ${redisError.message}`, redisError.stack);
+        }
+      }
       
-      // Cập nhật giỏ hàng
-      await this.redisService.set(cartKey, updatedCart);
+      // Cách 3: Xóa trạng thái đã chọn (luôn thực hiện dù Cách 1 thành công hay thất bại)
+      try {
+        await this.cartService.clearSelectedCartItems(userId);
+        this.logger.log(`[CÁCH 3] Đã xóa trạng thái chọn của tất cả khóa học`);
+      } catch (selectError) {
+        this.logger.error(`[CÁCH 3] Lỗi khi xóa trạng thái đã chọn: ${selectError.message}`, selectError.stack);
+      }
       
-      // Xóa danh sách khóa học đã chọn
-      await this.cartService.clearSelectedCartItems(userId);
+      // Cách 4: Xóa toàn bộ giỏ hàng nếu tất cả sản phẩm đã được thanh toán
+      try {
+        const cartKey = this.getCartKey(userId);
+        let currentCart = await this.redisService.get<any>(cartKey);
+        
+        if (!currentCart || (Array.isArray(currentCart) && currentCart.length === 0)) {
+          await this.redisService.del(cartKey);
+          await this.redisService.del(`${cartKey}:voucher`);
+          this.logger.log(`[CÁCH 4] Đã xóa hoàn toàn giỏ hàng và voucher cache trong Redis vì giỏ hàng trống`);
+        }
+      } catch (error) {
+        this.logger.error(`[CÁCH 4] Lỗi khi kiểm tra/xóa giỏ hàng trống: ${error.message}`, error.stack);
+      }
       
-      this.logger.log(`Đã cập nhật giỏ hàng sau khi thanh toán. Còn lại ${updatedCart.length} khóa học.`);
+      this.logger.log(`Đã hoàn tất xử lý giỏ hàng sau khi thanh toán.`);
     } catch (error) {
       this.logger.error(`Lỗi khi xử lý sau thanh toán: ${error.message}`, error.stack);
       // Không ném lỗi ở đây để không ảnh hưởng đến quá trình thanh toán
@@ -610,6 +720,16 @@ export class CustomerPaymentService {
     orderRecord.status = 'COMPLETED';
     orderRecord.completedAt = new Date();
     
+    // Thêm thông tin về tiền tệ và tỷ giá nếu chưa có
+    if (!orderRecord.currencyCode) {
+      orderRecord.currencyCode = 'VND';
+    }
+    
+    // Ghi log về việc chuyển đổi tiền tệ
+    if (orderRecord.totalAmountUSD) {
+      this.logger.log(`Thanh toán thành công: ${orderRecord.totalAmount} ${orderRecord.currencyCode} (tương đương ${orderRecord.totalAmountUSD} USD với tỷ giá ${orderRecord.exchangeRate || 'không xác định'})`);
+    }
+    
     // Cập nhật đơn hàng trong Redis
     const orderKey = this.getOrderKey(orderRecord.orderId);
     await this.setToRedisWithRetry(orderKey, orderRecord, 86400); // 24 giờ
@@ -619,7 +739,11 @@ export class CustomerPaymentService {
     const paymentDetails = { 
       orderId: orderRecord.orderId, 
       status: 'COMPLETED',
-      completedAt: new Date()
+      completedAt: new Date(),
+      currencyCode: orderRecord.currencyCode,
+      totalAmount: orderRecord.totalAmount,
+      totalAmountUSD: orderRecord.totalAmountUSD,
+      exchangeRate: orderRecord.exchangeRate
     };
     await this.setToRedisWithRetry(paymentDetailsKey, paymentDetails, 86400); // 24 giờ
 
@@ -627,10 +751,11 @@ export class CustomerPaymentService {
     this.logger.log('Lưu thông tin thanh toán vào database...');
     try {
       // Kiểm tra xem thanh toán đã tồn tại chưa
-      let existingPayment = null;
+      let existingPayment: any = null;
       
       // Sử dụng raw query để tránh lỗi UUID
       try {
+        this.logger.log(`Kiểm tra thanh toán tồn tại với token: ${token}, PaymentId: ${captureResult.paymentId}`);
         const payments = await this.prismaService.$queryRaw`
           SELECT * FROM tbl_payment 
           WHERE "transactionId" = ${token} OR "paymentId" = ${captureResult.paymentId}
@@ -643,47 +768,102 @@ export class CustomerPaymentService {
         this.logger.error(`Lỗi khi kiểm tra thanh toán tồn tại: ${sqlError.message}`, sqlError.stack);
       }
       
+      let paymentUuid = captureResult.paymentId;
+      
       if (existingPayment) {
         this.logger.log(`Thanh toán đã tồn tại trong database. ${JSON.stringify(existingPayment)}`);
+        paymentUuid = existingPayment.paymentId;
       } else {
         // Tạo UUID mới cho paymentId nếu cần
-        const paymentUuid = captureResult.paymentId && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(captureResult.paymentId)
+        paymentUuid = captureResult.paymentId && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(captureResult.paymentId)
           ? captureResult.paymentId
           : uuidv4();
         
-        // Tạo bản ghi thanh toán với raw query
-        const newPayment = await this.prismaService.$executeRaw`
-          INSERT INTO tbl_payment ("paymentId", "userId", "amount", "status", "paymentMethod", "transactionId", "createdAt")
-          VALUES (${paymentUuid}, ${userId || ''}, ${orderRecord.totalAmount}, 'COMPLETED', 'PAYPAL', ${token}, ${new Date()})
-        `;
+        this.logger.log(`Chuẩn bị tạo bản ghi thanh toán mới với paymentId: ${paymentUuid}`);
         
-        this.logger.log(`Đã lưu thông tin thanh toán vào database. PaymentID: ${paymentUuid}, TransactionId: ${token}`);
+        // Chuẩn bị metadata chứa thông tin tỷ giá và chuyển đổi
+        const metadata = JSON.stringify({
+          originalAmount: orderRecord.totalAmount,
+          originalCurrency: orderRecord.currencyCode || 'VND',
+          exchangeRate: orderRecord.exchangeRate,
+          usdAmount: orderRecord.totalAmountUSD
+        });
+        
+        this.logger.log(`Metadata thanh toán: ${metadata}`);
+        
+        try {
+          // Tạo bản ghi thanh toán với raw query, thêm metadata
+          const newPayment = await this.prismaService.$executeRaw`
+            INSERT INTO tbl_payment ("paymentId", "userId", "amount", "status", "paymentMethod", "transactionId", "createdAt", "metadata")
+            VALUES (${paymentUuid}, ${userId || ''}, ${orderRecord.totalAmount}, 'COMPLETED', 'PAYPAL', ${token}, ${new Date()}, ${metadata})
+          `;
+          
+          this.logger.log(`Kết quả tạo bản ghi thanh toán: ${newPayment}`);
+          this.logger.log(`Đã lưu thông tin thanh toán vào database. PaymentID: ${paymentUuid}, TransactionId: ${token}`);
+        } catch (insertError) {
+          this.logger.error(`Lỗi khi tạo bản ghi thanh toán mới: ${insertError.message}`, insertError.stack);
+          // Thử dùng Prisma Client thay vì raw query
+          try {
+            this.logger.log('Thử tạo bản ghi thanh toán bằng Prisma Client...');
+            const newPaymentWithClient = await this.prismaService.tbl_payment.create({
+              data: {
+                paymentId: paymentUuid,
+                userId: userId || undefined,
+                amount: orderRecord.totalAmount ? parseFloat(orderRecord.totalAmount.toString()) : null,
+                status: 'COMPLETED',
+                paymentMethod: 'PAYPAL',
+                transactionId: token,
+                createdAt: new Date()
+                // Không thể sử dụng metadata thông qua Prisma Client vì chưa cập nhật schema
+              }
+            });
+            
+            // Cập nhật metadata thông qua raw query
+            await this.prismaService.$executeRaw`
+              UPDATE tbl_payment 
+              SET "metadata" = ${metadata}
+              WHERE "paymentId" = ${paymentUuid}
+            `;
+            
+            this.logger.log(`Đã tạo bản ghi thanh toán thành công với Prisma Client. ID: ${newPaymentWithClient.paymentId}`);
+          } catch (prismaError) {
+            this.logger.error(`Lỗi khi tạo bản ghi thanh toán bằng Prisma Client: ${prismaError.message}`, prismaError.stack);
+          }
+        }
       }
       
       // Lưu chi tiết các khóa học đã mua
       for (const item of orderRecord.items) {
         try {
-          // Kiểm tra đăng ký khóa học đã tồn tại chưa
-          const existingEnrollments = await this.prismaService.$queryRaw`
-            SELECT * FROM tbl_course_enrollments 
-            WHERE "userId" = ${userId} AND "courseId" = ${item.courseId}
-          `;
+          // Sử dụng CourseEnrollmentService để đăng ký khóa học
+          const enrollment = await this.courseEnrollmentService.enrollUserToCourse({
+            userId: userId,
+            courseId: item.courseId,
+            paymentId: paymentUuid
+          });
           
-          if (Array.isArray(existingEnrollments) && existingEnrollments.length > 0) {
-            this.logger.log(`Người dùng ${userId} đã đăng ký khóa học ${item.courseId} trước đó`);
-            continue;
+          this.logger.log(`Đã đăng ký khóa học ${item.courseId} cho người dùng ${userId}`);
+          
+          // Lưu chi tiết đơn hàng
+          try {
+            const orderDetailId = uuidv4();
+            await this.prismaService.tbl_order_details.create({
+              data: {
+                orderDetailId: orderDetailId,
+                paymentId: paymentUuid,
+                courseId: item.courseId,
+                price: item.price ? parseFloat(item.price.toString()) : 0,
+                discount: 0, // Có thể cập nhật nếu có giảm giá
+                finalPrice: item.price ? parseFloat(item.price.toString()) : 0, // Giá sau khi giảm giá
+                createdAt: new Date()
+              }
+            });
+            this.logger.log(`Đã lưu chi tiết đơn hàng cho khóa học ${item.courseId}`);
+          } catch (orderDetailError) {
+            this.logger.error(`Lỗi khi lưu chi tiết đơn hàng: ${orderDetailError.message}`, orderDetailError.stack);
           }
-          
-          // Tạo enrollment mới
-          const enrollmentId = uuidv4();
-          await this.prismaService.$executeRaw`
-            INSERT INTO tbl_course_enrollments ("courseEnrollmentId", "userId", "courseId", "enrolledAt")
-            VALUES (${enrollmentId}, ${userId}, ${item.courseId}, ${new Date()})
-          `;
-          
-          this.logger.log(`Đã thêm khóa học ${item.courseId} cho người dùng ${userId}`);
         } catch (error) {
-          this.logger.error(`Lỗi khi thêm khóa học cho người dùng: ${error.message}`, error.stack);
+          this.logger.error(`Lỗi khi đăng ký khóa học cho người dùng: ${error.message}`, error.stack);
         }
       }
       
