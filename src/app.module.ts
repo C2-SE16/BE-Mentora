@@ -1,4 +1,4 @@
-import { ClassSerializerInterceptor, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './common/prisma/prisma.module';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
@@ -27,6 +27,7 @@ import { RolesGuard } from './auth/guards/roles.guard';
 import { VoucherModule } from './common/modules/voucher.module';
 import { DiscussingModule } from 'src/common/modules/discussing.module';
 import { ProgressModule } from 'src/common/modules/progress.module';
+import { PaymentModule } from './payment/payment.module';
 
 @Module({
   imports: [
@@ -59,10 +60,12 @@ import { ProgressModule } from 'src/common/modules/progress.module';
     VoucherModule,
     DiscussingModule,
     ProgressModule,
+    PaymentModule,
   ],
   controllers: [ElasticsearchController, RedisExampleController],
   providers: [
-    { provide: APP_INTERCEPTOR, useClass: ClassSerializerInterceptor },
+    // Đã xóa ClassSerializerInterceptor để tránh xung đột
+    // { provide: APP_INTERCEPTOR, useClass: ClassSerializerInterceptor },
   ],
 })
 export class AppModule {}

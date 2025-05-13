@@ -502,7 +502,7 @@ async function main() {
       overview:
         'Deep dive into JavaScript, covering advanced topics like closures, prototypes, and async programming',
       durationTime: 3000, // 50 hours
-      price: 89.99,
+      price: 1000000,
       thumbnail:
         'https://plus.unsplash.com/premium_vector-1734528979745-eaa10d557eed?q=80&w=2148&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
       isBestSeller: true,
@@ -515,7 +515,7 @@ async function main() {
       overview:
         'Comprehensive introduction to SEO, SEM, social media marketing, and content strategy',
       durationTime: 1800, // 30 hours
-      price: 69.99,
+      price: 500000,
       thumbnail:
         'https://plus.unsplash.com/premium_vector-1730731379517-dd0bc0f201cf?q=80&w=2148&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
       isBestSeller: false,
@@ -528,7 +528,7 @@ async function main() {
       overview:
         'Learn to develop iOS and Android apps using a single codebase with React Native',
       durationTime: 3600, // 60 hours
-      price: 109.99,
+      price: 2000000,
       thumbnail:
         'https://cdn.hashnode.com/res/hashnode/image/upload/v1681468530991/3ff30cea-325d-412e-8c2d-7e091df05b68.png?w=1600&h=840&fit=crop&crop=entropy&auto=compress,format&format=webp',
       isBestSeller: true,
@@ -569,7 +569,7 @@ async function main() {
       overview:
         'Khóa học giúp bạn xây dựng nền tảng vững chắc về Data Science và AI',
       durationTime: 4200, // 70 hours
-      price: 129.99,
+      price: 150000,
       thumbnail:
         'https://images.unsplash.com/photo-1501504905252-473c47e087f8?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3',
       isBestSeller: false,
@@ -582,7 +582,7 @@ async function main() {
       overview:
         'Học cách phát triển ứng dụng server-side với NodeJS, Express và MongoDB',
       durationTime: 3600, // 60 hours
-      price: 89.99,
+      price: 500000,
       thumbnail:
         'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3',
       isBestSeller: false,
@@ -595,7 +595,7 @@ async function main() {
       overview:
         'Học cách tạo chiến lược content marketing hiệu quả và đo lường thành công',
       durationTime: 2400, // 40 hours
-      price: 79.99,
+      price: 3000000,
       thumbnail:
         'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3',
       isBestSeller: false,
@@ -608,7 +608,7 @@ async function main() {
       overview:
         'Khóa học giúp bạn nắm vững các nguyên tắc thiết kế UI/UX và công cụ Figma',
       durationTime: 3000, // 50 hours
-      price: 99.99,
+      price: 1500000,
       thumbnail:
         'https://images.unsplash.com/photo-1581291518633-83b4ebd1d83e?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3',
       isBestSeller: false,
@@ -625,7 +625,7 @@ async function main() {
       overview:
         'Học cách sử dụng thư viện pandas, numpy, matplotlib và seaborn cho phân tích dữ liệu',
       durationTime: 3300, // 55 hours
-      price: 109.99,
+      price: 2000000,
       thumbnail:
         'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?q=80&w=2069&auto=format&fit=crop&ixlib=rb-4.0.3',
       isBestSeller: true,
@@ -638,7 +638,7 @@ async function main() {
       overview:
         'Học cách sử dụng thư viện pandas, numpy, matplotlib và seaborn cho phân tích dữ liệu',
       durationTime: 3300, // 55 hours
-      price: 109.99,
+      price: 2000000,
       thumbnail:
         'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?q=80&w=2069&auto=format&fit=crop&ixlib=rb-4.0.3',
       isBestSeller: true,
@@ -651,7 +651,7 @@ async function main() {
       overview:
         'Học cách tạo và tối ưu hóa chiến dịch quảng cáo trên Facebook, Instagram và Audience Network',
       durationTime: 1800, // 30 hours
-      price: 69.99,
+      price: 1000000,
       thumbnail:
         'https://images.unsplash.com/photo-1563986768609-322da13575f3?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3',
       isBestSeller: true,
@@ -664,7 +664,7 @@ async function main() {
       overview:
         'Khóa học giúp bạn làm chủ Unity 3D và phát triển game cross-platform',
       durationTime: 4500, // 75 hours
-      price: 129.99,
+      price: 2000000,
       thumbnail:
         'https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=2071&auto=format&fit=crop&ixlib=rb-4.0.3',
       isBestSeller: true,
@@ -677,7 +677,7 @@ async function main() {
       overview:
         'Học cách sử dụng Docker, Kubernetes, Jenkins và các công cụ DevOps khác',
       durationTime: 3600, // 60 hours
-      price: 119.99,
+      price: 1000000,
       thumbnail:
         'https://images.unsplash.com/photo-1633412802994-5c058f151b66?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3',
       isBestSeller: true,
