@@ -1,5 +1,5 @@
 -- CreateTable
-CREATE TABLE "tbl_payment_temp" (
+DROP TABLE IF EXISTS "tbl_payment_temp" (
     "tempId" UUID NOT NULL,
     "paymentId" VARCHAR,
     "orderId" UUID,
