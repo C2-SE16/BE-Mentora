@@ -1,0 +1,46 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+src/
+├── app.module.ts                 # Root module configuration
+├── main.ts                       # Application entry point
+├── common/                       # Shared components
+│   ├── services/                 # Common services
+│   ├── dto/                      # Common DTOs
+│   ├── modules/                  # Shared modules
+│   ├── cache/                    # Caching utilities
+│   ├── controllers/              # Common controllers
+│   ├── decorators/               # Custom decorators
+│   ├── interfaces/               # TypeScript interfaces
+│   ├── utils/                    # Utility functions
+│   ├── constants/                # Constant values
+│   ├── prisma/                   # Database utilities
+│   ├── interceptors/             # Request/response interceptors
+│   ├── repositories/             # Data access layer
+│   ├── middleware/               # Custom middleware
+│   └── guards/                   # Route guards
+│
+├── auth/                         # Authentication module
+│   ├── decorators/               # Auth decorators
+│   ├── services/                 # Auth services
+│   ├── guards/                   # Auth guards
+│   ├── repositories/             # Auth repositories
+│   ├── dto/                      # Auth DTOs
+│   ├── strategies/               # Auth strategies
+│   ├── entities/                 # Auth entities
+│   ├── auth.module.ts            # Auth module config
+│   └── controllers/              # Auth controllers
+│
+├── entities/                     # Database entities
+│   └── homepage-course.entity.ts # Course entity
+│
+└── config/                       # Configuration files
+
+- Always check the folder structure carefully before coding
+- Before coding, check which file to write to
+- Do not delete existing functions, only delete when needed to fix and fix errors
+- Always apply the SOLID rule
+- Do not let a file have too many lines, encourage splitting modules and components
