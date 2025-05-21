@@ -59,8 +59,22 @@ export class CategoryController {
   }
 
   @Get(':id/courses')
-  async getCoursesByCategory2(@Param('id') id: string) {
-    return this.categoryService.getCoursesByCategory(id);
+  async getCoursesByCategory2(
+    @Param('id') id: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('minRating') minRating?: number,
+  ) {
+    return this.categoryService.getCoursesByCategory(id, {
+      page,
+      limit,
+      minRating,
+    });
+  }
+
+  @Get(':id/rating-counts')
+  async getCoursesCountByRating(@Param('id') id: string) {
+    return await this.categoryService.getCoursesCountByRating(id);
   }
 
   @Get('/:categoryId')
