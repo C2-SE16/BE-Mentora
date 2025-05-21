@@ -105,6 +105,7 @@ async function main() {
     data: {
       categoryId: uuidv4(),
       name: 'FINANCE',
+      description: 'Finance related courses',
     },
   });
 
@@ -112,6 +113,7 @@ async function main() {
     data: {
       categoryId: uuidv4(),
       name: 'BUSSINESS',
+      description: 'Business related courses',
     },
   });
 
@@ -119,7 +121,8 @@ async function main() {
     data: {
       categoryId: uuidv4(),
       name: 'DESIGN',
-      // categoryType: 'DESIGN',
+      // name: 'Design',
+      description: 'Design related courses',
     },
   });
 

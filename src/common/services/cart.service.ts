@@ -76,20 +76,40 @@ export class CartService {
     }
     
     const cartKey = this.getCartKey(userId);
+    const selectedCartKey = this.getSelectedCartKey(userId);
 
-    // Lấy giỏ hàng hiện tại
-    const currentCart = (await this.redisService.get<CartItem[]>(cartKey)) || [];
+    try {
+      // Lấy giỏ hàng hiện tại
+      const currentCart = (await this.redisService.get<string[]>(cartKey)) || [];
+      const currentSelectedCart = (await this.redisService.get<string[]>(selectedCartKey)) || [];
 
-    // Lọc bỏ khóa học khỏi giỏ hàng
-    const updatedCart = currentCart.filter((item) => item.courseId !== courseId);
+      // Lọc bỏ khóa học khỏi giỏ hàng
+      const updatedCart = currentCart.filter((id) => id !== courseId);
+      const updatedSelectedCart = currentSelectedCart.filter((id) => id !== courseId);
 
-    // Lưu giỏ hàng mới
-    await this.redisService.set(cartKey, updatedCart);
+      // Lưu giỏ hàng mới
+      await this.redisService.set(cartKey, updatedCart);
+      await this.redisService.set(selectedCartKey, updatedSelectedCart);
 
-    return {
-      message: 'Đã xóa khóa học khỏi giỏ hàng thành công',
-      courseId,
-    };
+      // Xóa cache voucher nếu có
+      await this.redisService.del(`${cartKey}:voucher`);
+
+      // Cập nhật lại voucher nếu còn khóa học trong giỏ hàng
+      if (updatedCart.length > 0) {
+        await this.applyBestVoucherAutomatically(userId, updatedCart);
+      }
+
+      // Xóa cache của giỏ hàng
+      await this.redisService.del(`${cartKey}:cache`);
+
+      return {
+        message: 'Đã xóa khóa học khỏi giỏ hàng thành công',
+        courseId,
+      };
+    } catch (error) {
+      this.logger.error(`Lỗi khi xóa khóa học khỏi giỏ hàng: ${error.message}`);
+      throw error;
+    }
   }
 
   async getCart(getCartDto: GetCartDto) {
