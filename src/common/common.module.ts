@@ -9,6 +9,13 @@ import { CourseAccessService } from './services/course-access.service';
 import { CourseAccessController } from './controllers/course-access.controller';
 import { RoleCheckService } from './services/role-check.service';
 import { VoucherModule } from './modules/voucher.module';
+import { LectureProgressGuard } from './guards/lecture-progress.guard';
+import { ProgressService } from './services/progress.service';
+import { ProgressController } from './controllers/progress.controller';
+import { LectureVideoController } from './controllers/lecture-video.controller';
+import { VideoService } from './services/video.service';
+import { CurriculumProgressController } from './controllers/curriculum-progress.controller';
+import { QuizAttemptModule } from './modules/quiz-attempts.module';
 // ... import các service và repository khác
 
 @Module({
@@ -16,11 +23,15 @@ import { VoucherModule } from './modules/voucher.module';
     PrismaModule,
     RedisModule,
     VoucherModule,
+    QuizAttemptModule,
     // ... các module khác
   ],
   controllers: [
     CourseEnrollmentController,
     CourseAccessController,
+    ProgressController,
+    LectureVideoController,
+    CurriculumProgressController,
     // ... các controller khác
   ],
   providers: [
@@ -29,6 +40,9 @@ import { VoucherModule } from './modules/voucher.module';
     CourseEnrollmentRepository,
     CourseAccessService,
     RoleCheckService,
+    ProgressService,
+    LectureProgressGuard,
+    VideoService,
     // ... các service và repository khác
   ],
   exports: [
@@ -39,7 +53,10 @@ import { VoucherModule } from './modules/voucher.module';
     CourseEnrollmentRepository,
     CourseAccessService,
     RoleCheckService,
+    ProgressService,
+    LectureProgressGuard,
+    VideoService,
     // ... các service và repository khác
   ],
 })
-export class CommonModule {} 
+export class CommonModule { } 

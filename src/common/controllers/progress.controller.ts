@@ -23,7 +23,7 @@ import {
 
 @Controller('progress')
 export class ProgressController {
-  constructor(private readonly progressService: ProgressService) {}
+  constructor(private readonly progressService: ProgressService) { }
 
   @UseGuards(JwtAuthGuard)
   @Post('curriculum')
@@ -112,6 +112,56 @@ export class ProgressController {
     } catch (error) {
       throw new HttpException(
         'Error getting user progress',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('lecture-completion/:lectureId')
+  async checkLectureCompletion(
+    @Param('lectureId') lectureId: string,
+    @Req() req,
+  ) {
+    try {
+      const userId = req.user.userId;
+      const result = await this.progressService.hasCompletedTwoThirds(
+        userId,
+        lectureId,
+      );
+      return result;
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        'Error checking lecture completion',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('can-proceed/:currentLectureId/:nextLectureId')
+  async canProceedToNextLecture(
+    @Param('currentLectureId') currentLectureId: string,
+    @Param('nextLectureId') nextLectureId: string,
+    @Req() req,
+  ) {
+    try {
+      const userId = req.user.userId;
+      const result = await this.progressService.canProceedToNextLecture(
+        userId,
+        currentLectureId,
+        nextLectureId,
+      );
+      return result;
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        'Error checking ability to proceed',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

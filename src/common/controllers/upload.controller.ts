@@ -34,9 +34,6 @@ export class UploadController {
     'videos',
   );
 
-  // Hệ số chuyển đổi thời lượng video
-  private readonly DURATION_CONVERSION_FACTOR = 294.76; // 15033 / 51 = 294.76
-
   constructor(private readonly lectureService: LectureService) {
     // Tạo thư mục nếu chưa tồn tại
     if (!fs.existsSync(this.tempPath))
@@ -62,7 +59,16 @@ export class UploadController {
         getVideoDurationInSeconds(filePath)
           .then(duration => {
             console.log(`Thời lượng từ get-video-duration: ${duration} giây`);
-            resolve(Math.round(duration));
+            const roundedDuration = Math.round(duration);
+            console.log(`Thời lượng sau khi làm tròn: ${roundedDuration} giây`);
+
+            // Kiểm tra giá trị hợp lệ
+            if (isNaN(roundedDuration) || roundedDuration <= 0 || roundedDuration > 86400) {
+              console.error(`Thời lượng không hợp lệ: ${roundedDuration}`);
+              throw new Error(`Thời lượng không hợp lệ: ${roundedDuration}`);
+            }
+
+            resolve(roundedDuration);
           })
           .catch(err => {
             console.error('Lỗi khi sử dụng get-video-duration:', err);
@@ -96,7 +102,16 @@ export class UploadController {
 
                 const duration = parseFloat(output.trim());
                 console.log(`Thời lượng từ ffprobe: ${duration} giây`);
-                resolve(Math.round(duration));
+                const roundedDuration = Math.round(duration);
+                console.log(`Thời lượng sau khi làm tròn: ${roundedDuration} giây`);
+
+                // Kiểm tra giá trị hợp lệ
+                if (isNaN(roundedDuration) || roundedDuration <= 0 || roundedDuration > 86400) {
+                  console.error(`Thời lượng không hợp lệ: ${roundedDuration}`);
+                  return reject(new Error(`Thời lượng không hợp lệ: ${roundedDuration}`));
+                }
+
+                resolve(roundedDuration);
               });
             } catch (ffprobeError) {
               console.error('Lỗi khi sử dụng ffprobe:', ffprobeError);
@@ -291,6 +306,7 @@ export class UploadController {
     // Tính toán thời lượng video
     let duration = 0;
     let formattedDuration = '00:00';
+    let finalDuration = 0; // Khai báo biến finalDuration ở phạm vi rộng hơn
 
     try {
       console.log('===== TÍNH TOÁN THỜI LƯỢNG VIDEO =====');
@@ -326,15 +342,21 @@ export class UploadController {
         throw new Error(`Thời lượng không hợp lệ: ${duration}`);
       }
 
+      // Đảm bảo duration là số nguyên
+      finalDuration = Math.round(duration);
+      console.log(`Thời lượng cuối cùng (đã làm tròn): ${finalDuration} giây`);
+
       // Cập nhật thông tin vào database
       console.log('Đang cập nhật lecture với ID:', lectureId);
+      console.log('Dữ liệu cập nhật: videoUrl =', relativePath, 'duration =', finalDuration);
+
       const updatedLecture = await this.lectureService.updateLecture(lectureId, {
         videoUrl: relativePath,
-        duration: duration, // Lưu thời lượng thực tế theo giây
+        duration: finalDuration, // Lưu thời lượng thực tế theo giây
       });
       console.log('Kết quả cập nhật:', JSON.stringify(updatedLecture));
 
-      console.log(`Đã cập nhật thông tin video và thời lượng (${duration} giây) vào database cho bài giảng ${lectureId}`);
+      console.log(`Đã cập nhật thông tin video và thời lượng (${finalDuration} giây) vào database cho bài giảng ${lectureId}`);
       console.log('===== KẾT THÚC TÍNH TOÁN THỜI LƯỢNG VIDEO =====');
     } catch (error) {
       console.error('===== LỖI KHI TÍNH TOÁN THỜI LƯỢNG VIDEO =====');
@@ -350,7 +372,7 @@ export class UploadController {
       filePath: relativePath,
       courseId: courseId,
       lectureId: lectureId,
-      duration: duration, // Thời lượng thực tế (giây)
+      duration: finalDuration || duration, // Sử dụng finalDuration nếu có, ngược lại sử dụng duration
       formattedDuration: formattedDuration, // Định dạng dễ đọc
     };
 

@@ -54,7 +54,10 @@ export class LectureService {
     console.log('===== UPDATE LECTURE SERVICE =====');
     console.log('Lecture ID:', lectureId);
     console.log('Update data:', JSON.stringify(updateLectureDto));
-
+    
+    // Log stack trace để xác định nguồn gốc cuộc gọi
+    console.log('Stack trace:', new Error().stack);
+    
     // Kiểm tra xem lecture có tồn tại không
     const existingLecture = await this.prismaService.tbl_lectures.findUnique({
       where: { lectureId },
@@ -66,6 +69,39 @@ export class LectureService {
     }
 
     console.log('Lecture hiện tại:', JSON.stringify(existingLecture));
+
+    // Kiểm tra giá trị duration hợp lý
+    if (updateLectureDto.duration !== undefined) {
+      // Kiểm tra các giá trị bất thường cụ thể
+      if (updateLectureDto.duration === 14350) {
+        console.log(`Phát hiện giá trị duration bất thường: 14350 giây`);
+        if (existingLecture.duration && existingLecture.duration > 0 && existingLecture.duration < 3600) {
+          console.log(`Giữ nguyên giá trị cũ: ${existingLecture.duration} giây`);
+          updateLectureDto.duration = existingLecture.duration;
+        } else {
+          console.log('Bỏ qua cập nhật duration');
+          delete updateLectureDto.duration;
+        }
+      }
+      // Nếu duration quá lớn (> 10 giờ = 36000 giây) và đã có duration trước đó hợp lý
+      else if (updateLectureDto.duration > 36000 && existingLecture.duration && existingLecture.duration < 36000) {
+        console.log(`Phát hiện duration không hợp lý: ${updateLectureDto.duration} giây`);
+        console.log(`Giữ nguyên giá trị cũ: ${existingLecture.duration} giây`);
+        updateLectureDto.duration = existingLecture.duration;
+      }
+      
+      // Nếu duration âm hoặc 0, coi như không hợp lệ
+      else if (updateLectureDto.duration <= 0) {
+        console.log(`Phát hiện duration không hợp lệ: ${updateLectureDto.duration} giây`);
+        if (existingLecture.duration && existingLecture.duration > 0) {
+          console.log(`Giữ nguyên giá trị cũ: ${existingLecture.duration} giây`);
+          updateLectureDto.duration = existingLecture.duration;
+        } else {
+          console.log('Bỏ qua cập nhật duration');
+          delete updateLectureDto.duration;
+        }
+      }
+    }
 
     // Tạo dữ liệu cập nhật, chỉ lấy những trường có giá trị
     const updateData = {
