@@ -104,6 +104,8 @@ async function main() {
   const financeCategory = await prisma.tbl_categories.create({
     data: {
       categoryId: uuidv4(),
+      name: 'Finance',
+      description: 'Finance related courses',
       name: 'FINANCE',
     },
   });
@@ -111,6 +113,8 @@ async function main() {
   const businessCategory = await prisma.tbl_categories.create({
     data: {
       categoryId: uuidv4(),
+      name: 'Business',
+      description: 'Business related courses',
       name: 'BUSSINESS',
     },
   });
@@ -119,7 +123,8 @@ async function main() {
     data: {
       categoryId: uuidv4(),
       name: 'DESIGN',
-      // categoryType: 'DESIGN',
+      // name: 'Design',
+      description: 'Design related courses',
     },
   });
 

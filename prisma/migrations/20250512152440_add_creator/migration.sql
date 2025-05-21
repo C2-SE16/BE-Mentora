@@ -1,14 +1,2 @@
--- CreateTable
-CREATE TABLE "tbl_payment_temp" (
-    "tempId" UUID NOT NULL,
-    "paymentId" VARCHAR,
-    "orderId" UUID,
-    "userId" UUID,
-    "amount" DECIMAL,
-    "status" VARCHAR,
-    "paymentData" TEXT,
-    "createdAt" TIMESTAMP(6),
-    "expiresAt" TIMESTAMP(6),
-
-    CONSTRAINT "tbl_payment_temp_pkey" PRIMARY KEY ("tempId")
-);
+-- Không cần tạo lại bảng tbl_payment_temp vì đã tồn tại
+-- Nội dung này đã tồn tại trong migration 20250511095909_add_metadata_column/migration.sql 

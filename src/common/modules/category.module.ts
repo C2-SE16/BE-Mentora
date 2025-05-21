@@ -5,7 +5,7 @@ import { RoleCheckService } from '../services/role-check.service';
 
 @Module({
   controllers: [CategoryController],
-  providers: [CategoryService, RoleCheckService],
+  providers: [CategoryService,RoleCheckService],
   exports: [CategoryService],
 })
 export class CategoryModule {}
