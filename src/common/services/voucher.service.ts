@@ -792,11 +792,14 @@ export class VoucherService {
     categoryId?: string,
     scope?: VoucherScopeEnum,
   ) {
+    const foundInstructor = await this.prisma.tbl_instructors.findFirst({
+      where: { userId: instructorId },
+    });
+    
     const instructorCourses = await this.prisma.tbl_courses.findMany({
-      where: { instructorId },
+      where: { instructorId: foundInstructor?.instructorId },
       select: { courseId: true },
     });
-
     const instructorCourseIds = instructorCourses.map(
       (course) => course.courseId,
     );
