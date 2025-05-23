@@ -18,15 +18,18 @@ export class CourseEnrollmentRepository {
   }): Promise<any> {
     try {
       // Kiểm tra nếu đăng ký đã tồn tại
-      const existingEnrollment = await this.prisma.tbl_course_enrollments.findFirst({
-        where: {
-          userId: data.userId,
-          courseId: data.courseId,
-        },
-      });
+      const existingEnrollment =
+        await this.prisma.tbl_course_enrollments.findFirst({
+          where: {
+            userId: data.userId,
+            courseId: data.courseId,
+          },
+        });
 
       if (existingEnrollment) {
-        this.logger.log(`Người dùng ${data.userId} đã đăng ký khóa học ${data.courseId} trước đó`);
+        this.logger.log(
+          `Người dùng ${data.userId} đã đăng ký khóa học ${data.courseId} trước đó`,
+        );
         return existingEnrollment;
       }
 
@@ -44,7 +47,10 @@ export class CourseEnrollmentRepository {
       this.logger.log(`Đã tạo đăng ký khóa học mới: ${courseEnrollmentId}`);
       return enrollment;
     } catch (error) {
-      this.logger.error(`Lỗi khi tạo đăng ký khóa học: ${error.message}`, error.stack);
+      this.logger.error(
+        `Lỗi khi tạo đăng ký khóa học: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -83,9 +89,23 @@ export class CourseEnrollmentRepository {
         },
       });
 
-      return enrollments;
+      // Format lại dữ liệu trả về, đặc biệt là trường rating
+      return enrollments.map((enrollment) => ({
+        ...enrollment,
+        tbl_courses: enrollment.tbl_courses
+          ? {
+              ...enrollment.tbl_courses,
+              rating: enrollment.tbl_courses.rating
+                ? Number(Number(enrollment.tbl_courses.rating).toFixed(1))
+                : 0,
+            }
+          : null,
+      }));
     } catch (error) {
-      this.logger.error(`Lỗi khi lấy danh sách khóa học đã đăng ký: ${error.message}`, error.stack);
+      this.logger.error(
+        `Lỗi khi lấy danh sách khóa học đã đăng ký: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -104,7 +124,10 @@ export class CourseEnrollmentRepository {
 
       return !!enrollment;
     } catch (error) {
-      this.logger.error(`Lỗi khi kiểm tra đăng ký khóa học: ${error.message}`, error.stack);
+      this.logger.error(
+        `Lỗi khi kiểm tra đăng ký khóa học: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -135,8 +158,11 @@ export class CourseEnrollmentRepository {
 
       return enrollments;
     } catch (error) {
-      this.logger.error(`Lỗi khi lấy danh sách người dùng đăng ký khóa học: ${error.message}`, error.stack);
+      this.logger.error(
+        `Lỗi khi lấy danh sách người dùng đăng ký khóa học: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
-} 
+}
