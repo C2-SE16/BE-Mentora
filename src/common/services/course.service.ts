@@ -245,6 +245,11 @@ export class CourseService {
           },
         },
         tbl_course_target_audience: true,
+        tbl_course_categories: {
+          include: {
+            tbl_categories: true,
+          },
+        },
         tbl_modules: {
           include: {
             tbl_curricula: {
@@ -285,6 +290,11 @@ export class CourseService {
       thumbnail: course.thumbnail,
       createdAt: course.createdAt,
       updatedAt: course.updatedAt,
+      categories: course.tbl_course_categories.map((category) => ({
+        categoryId: category.tbl_categories?.categoryId,
+        name: category.tbl_categories?.name,
+        description: category.tbl_categories?.description,
+      })),
       reviews: course.tbl_course_reviews.map((review) => ({
         reviewId: review.reviewId,
         courseId: review.courseId,

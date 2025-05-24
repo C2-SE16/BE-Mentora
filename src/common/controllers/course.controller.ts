@@ -346,6 +346,7 @@ export class CourseController {
           HttpStatus.NOT_FOUND,
         );
       }
+
       return {
         success: true,
         data: details,
