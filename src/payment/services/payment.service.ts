@@ -1,4 +1,11 @@
-import { Injectable, Logger, NotFoundException, BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { PaypalService } from './paypal.service';
 import { UpdateInstructorPaypalDto } from '../dto/update-instructor-paypal.dto';
@@ -42,7 +49,9 @@ export class PaymentService {
       }
 
       // Kiểm tra tính hợp lệ của email PayPal
-      const isValid = await this.paypalService.validatePaypalEmail(updateDto.paypalEmail);
+      const isValid = await this.paypalService.validatePaypalEmail(
+        updateDto.paypalEmail,
+      );
       if (!isValid) {
         throw new BadRequestException('Email PayPal không hợp lệ');
       }
@@ -68,13 +77,13 @@ export class PaymentService {
       if (instructor.tbl_users?.email) {
         const baseUrl = process.env.APP_URL;
         const verificationUrl = `${baseUrl}/payment/verify-paypal?token=${verificationToken}`;
-        
+
         try {
           await this.emailService.sendPaypalVerificationEmail(
             instructor.tbl_users.email,
             instructor.instructorName || 'Instructor',
             updateDto.paypalEmail,
-            verificationUrl
+            verificationUrl,
           );
         } catch (error) {
           this.logger.error(`Lỗi khi gửi email xác nhận: ${error.message}`);
@@ -84,7 +93,8 @@ export class PaymentService {
 
       return {
         success: true,
-        message: 'Đã thêm tài khoản PayPal. Vui lòng kiểm tra email để xác nhận.',
+        message:
+          'Đã thêm tài khoản PayPal. Vui lòng kiểm tra email để xác nhận.',
         data: {
           instructorId: updatedInstructor.instructorId,
           paypalEmail: updatedInstructor.paypalEmail,
@@ -152,6 +162,7 @@ export class PaymentService {
    */
   async getInstructorPaypalInfo(instructorId: string) {
     try {
+      console.log('instructorId::', instructorId);
       const instructor = await this.prisma.tbl_instructors.findUnique({
         where: { instructorId },
         select: {
@@ -161,7 +172,12 @@ export class PaymentService {
           isPaypalVerified: true,
         },
       });
-
+      // const instructor02 = await this.prisma.tbl_users.findUnique({
+      //   where: {
+      //     userId: instructorId,
+      //   },
+      // });
+      // console.log('instructor::', instructor02);
       if (!instructor) {
         throw new NotFoundException('Không tìm thấy instructor');
       }
@@ -201,15 +217,15 @@ export class PaymentService {
       // Kiểm tra xác minh PayPal trước khi cho phép rút tiền
       if (!instructor.isPaypalVerified) {
         throw new BadRequestException(
-          'Tài khoản PayPal chưa được xác minh. Vui lòng xác minh trước khi thực hiện thanh toán.'
+          'Tài khoản PayPal chưa được xác minh. Vui lòng xác minh trước khi thực hiện thanh toán.',
         );
       }
 
       // Tính tổng doanh thu từ các khóa học
       let totalRevenue = 0;
 
-      instructor.tbl_courses.forEach(course => {
-        course.tbl_order_details.forEach(orderDetail => {
+      instructor.tbl_courses.forEach((course) => {
+        course.tbl_order_details.forEach((orderDetail) => {
           if (orderDetail.finalPrice) {
             totalRevenue += parseFloat(orderDetail.finalPrice.toString());
           }
@@ -231,7 +247,9 @@ export class PaymentService {
         },
       };
     } catch (error) {
-      this.logger.error(`Lỗi khi tính toán thanh toán cho instructor: ${error.message}`);
+      this.logger.error(
+        `Lỗi khi tính toán thanh toán cho instructor: ${error.message}`,
+      );
       throw error;
     }
   }
@@ -282,18 +300,19 @@ export class PaymentService {
       if (instructor.tbl_users?.email) {
         const baseUrl = process.env.APP_URL || 'http://localhost:9090';
         const verificationUrl = `${baseUrl}/payment/verify-paypal?token=${verificationToken}`;
-        
+
         await this.emailService.sendPaypalVerificationEmail(
           instructor.tbl_users.email,
           instructor.instructorName || 'Instructor',
           instructor.paypalEmail,
-          verificationUrl
+          verificationUrl,
         );
       }
 
       return {
         success: true,
-        message: 'Đã gửi lại email xác nhận. Vui lòng kiểm tra hộp thư của bạn.',
+        message:
+          'Đã gửi lại email xác nhận. Vui lòng kiểm tra hộp thư của bạn.',
       };
     } catch (error) {
       this.logger.error(`Lỗi khi gửi lại email xác nhận: ${error.message}`);
@@ -317,7 +336,9 @@ export class PaymentService {
 
       // Kiểm tra xem instructor đã xác minh PayPal chưa
       if (!instructor.isPaypalVerified || !instructor.paypalEmail) {
-        throw new ForbiddenException('Bạn cần xác minh tài khoản PayPal trước khi đặt giá cho khóa học');
+        throw new ForbiddenException(
+          'Bạn cần xác minh tài khoản PayPal trước khi đặt giá cho khóa học',
+        );
       }
 
       // Tìm khóa học và kiểm tra quyền sở hữu
@@ -330,7 +351,9 @@ export class PaymentService {
       }
 
       if (course.instructorId !== instructor.instructorId) {
-        throw new ForbiddenException('Bạn không có quyền cập nhật khóa học này');
+        throw new ForbiddenException(
+          'Bạn không có quyền cập nhật khóa học này',
+        );
       }
 
       // Cập nhật giá khóa học
@@ -356,4 +379,4 @@ export class PaymentService {
       throw error;
     }
   }
-} 
+}

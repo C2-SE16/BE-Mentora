@@ -7,7 +7,7 @@ import { RoleCheckService } from 'src/common/services/role-check.service';
 export class RolesGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
-    private roleCheckService: RoleCheckService
+    private roleCheckService: RoleCheckService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -22,9 +22,12 @@ export class RolesGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest();
     const user = request.user;
-
     if (!user || !user.role) {
       return false;
+    }
+
+    if (requiredRoles.includes(user.role)) {
+      return true;
     }
 
     // Nếu role là INSTRUCTOR và user chưa có quyền này
@@ -34,9 +37,13 @@ export class RolesGuard implements CanActivate {
       }
 
       // Kiểm tra DB nếu token không có role INSTRUCTOR
-      const isInstructor = await this.roleCheckService.isInstructor(user.userId || user.sub);
+      const isInstructor = await this.roleCheckService.isInstructor(
+        user.userId || user.sub,
+      );
       if (isInstructor) {
-        const instructorId = await this.roleCheckService.getInstructorId(user.userId || user.sub);
+        const instructorId = await this.roleCheckService.getInstructorId(
+          user.userId || user.sub,
+        );
         request.user.instructorId = instructorId;
         return true;
       }

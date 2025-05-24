@@ -120,7 +120,7 @@ export class AuthService {
         role,
       );
 
-      // Gửi email xác thực 
+      // Gửi email xác thực
       try {
         await this.emailService.sendVerificationEmail(email, verificationToken);
       } catch (emailError) {
@@ -128,7 +128,9 @@ export class AuthService {
         if (newUser?.userId) {
           await this.safeDeleteUser(newUser.userId);
         }
-        throw new InternalServerErrorException('Không thể gửi email xác thực, vui lòng thử lại sau');
+        throw new InternalServerErrorException(
+          'Không thể gửi email xác thực, vui lòng thử lại sau',
+        );
       }
 
       // Generate JWT token
@@ -138,22 +140,21 @@ export class AuthService {
         role: newUser.role,
       };
 
-      const accessToken = this.jwtService.sign(payload);
+      // const accessToken = this.jwtService.sign(payload);
 
       // Create UserEntity object with new user data
       const userEntity = new UserEntity(newUser);
-
       // Return register response entity
       return new RegisterResponseEntity({
         user: userEntity,
-        accessToken,
+        // accessToken,
       });
     } catch (error) {
       // Nếu đã tạo người dùng nhưng có lỗi khác xảy ra, xóa người dùng khỏi database
       if (newUser?.userId) {
         await this.safeDeleteUser(newUser.userId);
       }
-      
+
       if (error instanceof InternalServerErrorException) {
         throw error;
       }
