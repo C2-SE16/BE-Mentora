@@ -1,5 +1,8 @@
--- CreateTable
-DROP TABLE IF EXISTS "tbl_payment_temp" (
+-- Drop the table if it exists
+DROP TABLE IF EXISTS "tbl_payment_temp";
+
+-- Create the table
+CREATE TABLE "tbl_payment_temp" (
     "tempId" UUID NOT NULL,
     "paymentId" VARCHAR,
     "orderId" UUID,
