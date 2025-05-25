@@ -12,6 +12,7 @@ import {
   ValidationPipe,
   UseGuards,
   Put,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { CourseService } from '../services/course.service';
 import { CreateCourseDto } from '../dto/course.dto';
@@ -86,6 +87,26 @@ export class CourseController {
         {
           success: false,
           message: 'Failed to get homepage courses',
+          error: (error as Error).message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('homepage/all')
+  @HttpCode(HttpStatus.OK)
+  async getAllHomepageCourses(
+    @Query('offset', new ParseIntPipe({ optional: true })) offset: number = 0,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit: number = 10,
+  ) {
+    try {
+      return await this.courseService.getAllHomepageCourses(offset, limit);
+    } catch (error) {
+      throw new HttpException(
+        {
+          success: false,
+          message: 'Failed to get all homepage courses',
           error: (error as Error).message,
         },
         HttpStatus.INTERNAL_SERVER_ERROR,

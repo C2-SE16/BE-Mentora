@@ -11,6 +11,7 @@ export class HomepageCourseEntity {
   originalPrice: string;
   isBestSeller?: boolean = false;
   image: string;
+  createdAt: Date;
   updatedDate: string;
   totalHours?: number = 0;
   description?: string = '';
@@ -60,6 +61,9 @@ export class HomepageCoursesResponseEntity {
   @Type(() => HomepageCourseEntity)
   bestSellerCourses: HomepageCourseEntity[];
 
+  @Type(() => HomepageCourseEntity)
+  newCourses: HomepageCourseEntity[];
+
   @Type(() => HomepageTopicEntity)
   topics: HomepageTopicEntity[];
 
@@ -72,6 +76,7 @@ export class HomepageCoursesResponseEntity {
       {
         recommendedCourses: [],
         bestSellerCourses: [],
+        newCourses: [],
         topics: [],
         mentors: [],
       },
@@ -79,4 +84,3 @@ export class HomepageCoursesResponseEntity {
     );
   }
 }
-

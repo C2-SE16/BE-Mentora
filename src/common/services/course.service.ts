@@ -747,6 +747,46 @@ export class CourseService {
         },
       });
 
+      const newCourses = await this.prismaService.tbl_courses.findMany({
+        where: {
+          approved: COURSE_APPROVE_STATUS.APPROVED,
+          createdAt: {
+            gte: new Date(new Date().setDate(new Date().getDate() - 7)), // 7 days ago
+          },
+        },
+        include: {
+          tbl_instructors: {
+            include: {
+              tbl_users: true,
+            },
+          },
+          tbl_course_reviews: true,
+          tbl_course_categories: {
+            include: {
+              tbl_categories: true,
+            },
+          },
+          tbl_course_enrollments: true,
+        },
+        orderBy: {
+          createdAt: 'desc', // Ưu tiên theo thời gian tạo
+        },
+        take: 10, // Lấy nhiều hơn để có thể lọc
+      });
+
+      const sortedNewCourses = newCourses
+        .sort((a, b) => {
+          // Tạo một "điểm" ưu tiên từ rating và số lượt mua
+          const scoreA =
+            (a.rating?.toNumber() || 0) * 0.7 +
+            (a.tbl_course_enrollments.length || 0) * 0.3;
+          const scoreB =
+            (b.rating?.toNumber() || 0) * 0.7 +
+            (b.tbl_course_enrollments.length || 0) * 0.3;
+          return scoreB - scoreA; // Sắp xếp giảm dần
+        })
+        .slice(0, 4);
+
       const popularTopics = await this.prismaService.tbl_categories.findMany({
         take: 8,
         include: {
@@ -815,11 +855,60 @@ export class CourseService {
         bestSellerCourses: bestSellerCourses.map((course) =>
           this.formatCourseForHomepage(course),
         ),
+        newCourses: sortedNewCourses.map((course) =>
+          this.formatCourseForHomepage(course),
+        ),
         topics: formattedTopics,
         mentors: formattedMentors,
       };
     } catch (error) {
       console.log('Error getting homepage courses:', error);
+      throw error;
+    }
+  }
+
+  async getAllHomepageCourses(offset: number = 0, limit: number = 10) {
+    try {
+      // Lấy tổng số khóa học đã được APPROVED
+      const totalCount = await this.prismaService.tbl_courses.count({
+        where: {
+          approved: COURSE_APPROVE_STATUS.APPROVED,
+        },
+      });
+
+      // Lấy khóa học theo offset và limit
+      const courses = await this.prismaService.tbl_courses.findMany({
+        where: {
+          approved: COURSE_APPROVE_STATUS.APPROVED,
+        },
+        include: {
+          tbl_instructors: {
+            include: {
+              tbl_users: true,
+            },
+          },
+          tbl_course_reviews: true,
+          tbl_course_categories: {
+            include: {
+              tbl_categories: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip: offset,
+        take: limit,
+      });
+
+      return {
+        courses: courses.map((course) => this.formatCourseForHomepage(course)),
+        totalCount,
+        hasMore: offset + limit < totalCount,
+        nextOffset: offset + limit,
+      };
+    } catch (error) {
+      console.error('Error getting all homepage courses:', error);
       throw error;
     }
   }
@@ -830,7 +919,7 @@ export class CourseService {
     // Calculate average rating
     const reviews = course.tbl_course_reviews || [];
     const totalReviews = reviews.length;
-
+    console.log('course', course);
     let averageRating = 0;
     if (course.rating) {
       if (typeof course.rating.toNumber === 'function') {
@@ -862,10 +951,11 @@ export class CourseService {
       instructor: instructor,
       rating: averageRating,
       reviews: totalReviews,
-      currentPrice: `₫${currentPrice.toLocaleString()}`,
-      originalPrice: `₫${originalPrice.toLocaleString()}`,
+      currentPrice: `${currentPrice.toLocaleString()}₫`,
+      originalPrice: `${originalPrice.toLocaleString()}₫`,
       isBestSeller: course.isBestSeller || false,
       image: course.thumbnail || '',
+      createdAt: course.createdAt || new Date(),
       updatedAt: course.updatedAt,
       updatedDate: formatDate(course.updatedAt),
       totalHours: Math.round(course.durationTime || 600) / 60 || 10,
