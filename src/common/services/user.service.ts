@@ -167,21 +167,77 @@ export class UserService {
         userId: id,
       },
       include: {
-        tbl_instructors: true,
+        tbl_instructors: {
+          include: {
+            tbl_courses: {
+              include: {
+                tbl_course_categories: {
+                  include: {
+                    tbl_categories: true,
+                  },
+                },
+                tbl_instructors: {
+                  include: {
+                    tbl_users: true,
+                  },
+                },
+              },
+            },
+          },
+        },
         tbl_course_enrollments: {
           include: {
-            tbl_courses: true,
+            tbl_courses: {
+              include: {
+                tbl_course_categories: {
+                  include: {
+                    tbl_categories: true,
+                  },
+                },
+                tbl_instructors: {
+                  include: {
+                    tbl_users: true,
+                  },
+                },
+              },
+            },
           },
         },
         tbl_course_reviews: {
           include: {
-            tbl_courses: true,
+            tbl_courses: {
+              include: {
+                tbl_course_categories: {
+                  include: {
+                    tbl_categories: true,
+                  },
+                },
+                tbl_instructors: {
+                  include: {
+                    tbl_users: true,
+                  },
+                },
+              },
+            },
           },
         },
         tbl_payment: true,
         tbl_favorites: {
           include: {
-            tbl_courses: true,
+            tbl_courses: {
+              include: {
+                tbl_course_categories: {
+                  include: {
+                    tbl_categories: true,
+                  },
+                },
+                tbl_instructors: {
+                  include: {
+                    tbl_users: true,
+                  },
+                },
+              },
+            },
           },
         },
       },
