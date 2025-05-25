@@ -653,6 +653,11 @@ export class CourseService {
             },
           },
           tbl_course_reviews: true,
+          tbl_course_enrollments: {
+            include: {
+              tbl_users: true,
+            },
+          },
         },
         orderBy: {
           createdAt: 'desc',
@@ -683,6 +688,19 @@ export class CourseService {
             }
           : null,
         reviewCount: course.tbl_course_reviews.length,
+        enrollments: course.tbl_course_enrollments.map((enrollment) => ({
+          userId: enrollment.userId,
+          courseEnrollmentId: enrollment.courseEnrollmentId,
+          enrolledAt: enrollment.enrolledAt,
+          courseId: enrollment.courseId,
+          user: enrollment.tbl_users
+            ? {
+                userId: enrollment.tbl_users.userId,
+                fullName: enrollment.tbl_users.fullName,
+                avatar: enrollment.tbl_users.avatar,
+              }
+            : null,
+        })),
       }));
     } catch (error) {
       console.error('Error fetching courses by instructor ID:', error);
