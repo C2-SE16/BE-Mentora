@@ -272,6 +272,11 @@ export class CourseService {
             },
           },
         },
+        tbl_course_enrollments: {
+          include: {
+            tbl_users: true,
+          },
+        },
       },
     });
 
@@ -426,6 +431,19 @@ export class CourseService {
             })),
           })),
         })),
+      })),
+      enrollments: course.tbl_course_enrollments.map((enrollment) => ({
+        userId: enrollment.userId,
+        courseEnrollmentId: enrollment.courseEnrollmentId,
+        enrolledAt: enrollment.enrolledAt,
+        courseId: enrollment.courseId,
+        user: enrollment.tbl_users
+          ? {
+              userId: enrollment.tbl_users.userId,
+              fullName: enrollment.tbl_users.fullName,
+              avatar: enrollment.tbl_users.avatar,
+            }
+          : null,
       })),
     };
   }
