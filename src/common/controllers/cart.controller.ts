@@ -33,8 +33,6 @@ export class CartController {
     @GetUser('userId') userId: string,
     // @UserId() userId: string,
   ) {
-    // console.log('addToCartDto:::', addToCartDto);
-    console.log('userId:::', userId);
     return this.cartService.addToCart(addToCartDto, userId);
     // return this.cartService.addToCart({
     //   ...addToCartDto,

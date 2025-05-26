@@ -937,7 +937,6 @@ export class CourseService {
     // Calculate average rating
     const reviews = course.tbl_course_reviews || [];
     const totalReviews = reviews.length;
-    console.log('course', course);
     let averageRating = 0;
     if (course.rating) {
       if (typeof course.rating.toNumber === 'function') {
