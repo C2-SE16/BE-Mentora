@@ -189,7 +189,7 @@ export class CustomerPaymentService {
     
     // Lấy danh sách khóa học đã chọn
     const selectedCart = await this.cartService.getSelectedCartItems({ userId });
-    
+    console.log('selectedCart:::', selectedCart);
     if (!selectedCart || !selectedCart.courses || selectedCart.courses.length === 0) {
       this.logger.warn(`[REDIS-DEBUG] Không có khóa học nào được chọn để thanh toán cho userId: ${userId}`);
       throw new BadRequestException('Không có khóa học nào được chọn để thanh toán');
@@ -198,7 +198,7 @@ export class CustomerPaymentService {
     const items: CartItem[] = selectedCart.courses.map(course => ({
       courseId: course.courseId,
       name: course.title || 'Khóa học',
-      price: course.price ? Number(course.price) : 0,
+      price: course.finalPrice ? Number(course.finalPrice) : 0,
       currencyCode: 'VND'  // Thêm thông tin tiền tệ VND
     }));
 

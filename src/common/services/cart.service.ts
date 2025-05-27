@@ -4,7 +4,11 @@ import { PrismaService } from '../prisma/prisma.service';
 import {
   AddToCartDto,
   RemoveFromCartDto,
-  GetCartDto, SelectCartItemsDto, GetSelectedCartItemsDto, UpdateCartItemStatusDto, CartItemDto,
+  GetCartDto,
+  SelectCartItemsDto,
+  GetSelectedCartItemsDto,
+  UpdateCartItemStatusDto,
+  CartItemDto,
   AppliedVoucherInCart,
 } from '../dto/cart.dto';
 import { VoucherService } from './voucher.service';
@@ -70,22 +74,26 @@ export class CartService {
 
   async removeFromCart(removeFromCartDto: RemoveFromCartDto) {
     const { userId, courseId } = removeFromCartDto;
-    
+
     if (!userId) {
       throw new Error('UserId không được để trống');
     }
-    
+
     const cartKey = this.getCartKey(userId);
     const selectedCartKey = this.getSelectedCartKey(userId);
 
     try {
       // Lấy giỏ hàng hiện tại
-      const currentCart = (await this.redisService.get<string[]>(cartKey)) || [];
-      const currentSelectedCart = (await this.redisService.get<string[]>(selectedCartKey)) || [];
+      const currentCart =
+        (await this.redisService.get<string[]>(cartKey)) || [];
+      const currentSelectedCart =
+        (await this.redisService.get<string[]>(selectedCartKey)) || [];
 
       // Lọc bỏ khóa học khỏi giỏ hàng
       const updatedCart = currentCart.filter((id) => id !== courseId);
-      const updatedSelectedCart = currentSelectedCart.filter((id) => id !== courseId);
+      const updatedSelectedCart = currentSelectedCart.filter(
+        (id) => id !== courseId,
+      );
 
       // Lưu giỏ hàng mới
       await this.redisService.set(cartKey, updatedCart);
@@ -114,11 +122,11 @@ export class CartService {
 
   async getCart(getCartDto: GetCartDto) {
     const { userId } = getCartDto;
-    
+
     if (!userId) {
       throw new Error('UserId không được để trống');
     }
-    
+
     const cartKey = this.getCartKey(userId);
     // Lấy danh sách khóa học trong giỏ hàng
     const cartItems = (await this.redisService.get<string[]>(cartKey)) || [];
@@ -215,7 +223,7 @@ export class CartService {
     if (!userId) {
       throw new Error('UserId không được để trống');
     }
-    
+
     const cartKey = this.getCartKey(userId);
     await this.redisService.del(cartKey);
     return {
@@ -226,24 +234,26 @@ export class CartService {
   // Cập nhật phương thức để chọn khóa học cụ thể
   async selectCartItems(selectCartItemsDto: SelectCartItemsDto) {
     const { userId, selectedCourseIds } = selectCartItemsDto;
-    
+
     if (!userId) {
       throw new Error('UserId không được để trống');
     }
-    
+
     const cartKey = this.getCartKey(userId);
     const selectedCartKey = this.getSelectedCartKey(userId);
 
     // Lấy giỏ hàng hiện tại
     const cartItems = (await this.redisService.get<string[]>(cartKey)) || [];
-    
+
     // Kiểm tra xem tất cả các khóa học được chọn có trong giỏ hàng không
-    const invalidCourseIds = selectedCourseIds.filter(id => 
-      !cartItems.includes(id)
+    const invalidCourseIds = selectedCourseIds.filter(
+      (id) => !cartItems.includes(id),
     );
-    
+
     if (invalidCourseIds.length > 0) {
-      throw new Error(`Một số khóa học không tồn tại trong giỏ hàng: ${invalidCourseIds.join(', ')}`);
+      throw new Error(
+        `Một số khóa học không tồn tại trong giỏ hàng: ${invalidCourseIds.join(', ')}`,
+      );
     }
 
     // Lưu danh sách ID của các khóa học được chọn vào Redis
@@ -258,35 +268,38 @@ export class CartService {
   // Phương thức để cập nhật trạng thái của nhiều khóa học cùng lúc
   async updateCartItemStatus(updateCartItemStatusDto: UpdateCartItemStatusDto) {
     const { userId, items } = updateCartItemStatusDto;
-    
+
     if (!userId) {
       throw new Error('UserId không được để trống');
     }
-    
+
     const cartKey = this.getCartKey(userId);
     const selectedCartKey = this.getSelectedCartKey(userId);
 
     // Lấy giỏ hàng hiện tại
     const cartItems = (await this.redisService.get<string[]>(cartKey)) || [];
-    
+
     // Lấy danh sách ID khóa học hiện đang được chọn
-    const currentSelectedIds = (await this.redisService.get<string[]>(selectedCartKey)) || [];
-    
+    const currentSelectedIds =
+      (await this.redisService.get<string[]>(selectedCartKey)) || [];
+
     // Danh sách ID khóa học cần cập nhật
-    const updateCourseIds = items.map(item => item.courseId);
-    
+    const updateCourseIds = items.map((item) => item.courseId);
+
     // Kiểm tra xem tất cả các khóa học cần cập nhật có trong giỏ hàng không
-    const invalidCourseIds = updateCourseIds.filter(id => 
-      !cartItems.includes(id)
+    const invalidCourseIds = updateCourseIds.filter(
+      (id) => !cartItems.includes(id),
     );
-    
+
     if (invalidCourseIds.length > 0) {
-      throw new Error(`Một số khóa học không tồn tại trong giỏ hàng: ${invalidCourseIds.join(', ')}`);
+      throw new Error(
+        `Một số khóa học không tồn tại trong giỏ hàng: ${invalidCourseIds.join(', ')}`,
+      );
     }
 
     // Cập nhật danh sách khóa học được chọn
     const newSelectedIds = [...currentSelectedIds];
-    
+
     for (const item of items) {
       if (item.selected && !newSelectedIds.includes(item.courseId)) {
         // Thêm vào danh sách được chọn nếu chưa có
@@ -299,7 +312,7 @@ export class CartService {
         }
       }
     }
-    
+
     // Lưu danh sách đã cập nhật
     await this.redisService.set(selectedCartKey, newSelectedIds);
 
@@ -312,16 +325,18 @@ export class CartService {
   // Phương thức để lấy danh sách các khóa học đã được chọn
   async getSelectedCartItems(getSelectedCartItemsDto: GetSelectedCartItemsDto) {
     const { userId } = getSelectedCartItemsDto;
-    
+
     if (!userId) {
       throw new Error('UserId không được để trống');
     }
-    
+
     const selectedCartKey = this.getSelectedCartKey(userId);
+    const cartKey = this.getCartKey(userId);
 
     // Lấy danh sách ID của các khóa học đã chọn
-    const selectedCourseIds = (await this.redisService.get<string[]>(selectedCartKey)) || [];
-    
+    const selectedCourseIds =
+      (await this.redisService.get<string[]>(selectedCartKey)) || [];
+
     if (selectedCourseIds.length === 0) {
       return {
         courses: [],
@@ -343,12 +358,45 @@ export class CartService {
           },
         },
         tbl_instructors: true,
+        tbl_voucher_courses: true,
       },
     });
 
+    // Lấy thông tin voucher đã áp dụng (nếu có) để tính toán giá sau discount
+    const appliedVoucher = await this.redisService.get<AppliedVoucherInCart>(
+      `${cartKey}:voucher`,
+    );
+
+    // Tính toán giá sau khi áp dụng voucher cho từng khóa học đã chọn
+    const coursesWithPricing = selectedCourses.map((course) => {
+      const originalPrice = Number(course.price);
+
+      let discountAmount = 0;
+      let finalPrice = originalPrice;
+
+      // Kiểm tra appliedVoucher có tồn tại không trước khi truy cập
+      if (appliedVoucher && appliedVoucher.discountedCourses) {
+        const discountInfo = appliedVoucher.discountedCourses.find(
+          (c) => c.courseId === course.courseId,
+        );
+
+        if (discountInfo) {
+          discountAmount = discountInfo.discountAmount;
+          finalPrice = discountInfo.finalPrice;
+        }
+      }
+ 
+      return {
+        ...course,
+        originalPrice,
+        discountAmount,
+        finalPrice: Math.round(finalPrice * 1000) / 1000,
+      };
+    });
+
     return {
-      courses: selectedCourses,
-      totalItems: selectedCourses.length,
+      courses: coursesWithPricing,
+      totalItems: coursesWithPricing.length,
     };
   }
 
@@ -357,12 +405,12 @@ export class CartService {
     if (!userId) {
       throw new Error('UserId không được để trống');
     }
-    
+
     const selectedCartKey = this.getSelectedCartKey(userId);
-    
+
     // Xóa danh sách các khóa học đã chọn
     await this.redisService.del(selectedCartKey);
-    
+
     return {
       message: 'Đã xóa trạng thái chọn của tất cả khóa học thành công',
     };
@@ -375,63 +423,81 @@ export class CartService {
     }
 
     try {
-      this.logger.log(`Xóa ${courseIds.length} khóa học khỏi giỏ hàng trong database cho userId: ${userId}`);
-      
+      this.logger.log(
+        `Xóa ${courseIds.length} khóa học khỏi giỏ hàng trong database cho userId: ${userId}`,
+      );
+
       // Tìm cartId của người dùng
       const userCart = await this.prismaService.tbl_cart.findFirst({
-        where: { userId }
+        where: { userId },
       });
-      
+
       if (!userCart) {
-        this.logger.log(`Không tìm thấy giỏ hàng trong database cho userId: ${userId}`);
-        
+        this.logger.log(
+          `Không tìm thấy giỏ hàng trong database cho userId: ${userId}`,
+        );
+
         // Ngay cả khi không tìm thấy trong database, vẫn xóa khỏi Redis
         await this.removeCoursesFromRedisCart(userId, courseIds);
-        
+
         return {
           message: 'Không tìm thấy giỏ hàng trong database, đã xóa khỏi Redis',
-          removedItems: 0
+          removedItems: 0,
         };
       }
-      
+
       // Xóa các mục trong giỏ hàng tương ứng với các khóa học đã thanh toán
       const result = await this.prismaService.tbl_cart_items.deleteMany({
         where: {
           cartId: userCart.cartId,
           courseId: {
-            in: courseIds
-          }
-        }
+            in: courseIds,
+          },
+        },
       });
-      
-      this.logger.log(`Đã xóa ${result.count} khóa học khỏi giỏ hàng trong database cho userId: ${userId}`);
-      
+
+      this.logger.log(
+        `Đã xóa ${result.count} khóa học khỏi giỏ hàng trong database cho userId: ${userId}`,
+      );
+
       // Xóa khỏi Redis
       await this.removeCoursesFromRedisCart(userId, courseIds);
-      
+
       return {
-        message: 'Đã xóa khóa học khỏi giỏ hàng trong database và Redis thành công',
-        removedItems: result.count
+        message:
+          'Đã xóa khóa học khỏi giỏ hàng trong database và Redis thành công',
+        removedItems: result.count,
       };
     } catch (error) {
-      this.logger.error(`Lỗi khi xóa khóa học khỏi giỏ hàng trong database: ${error.message}`, error.stack);
+      this.logger.error(
+        `Lỗi khi xóa khóa học khỏi giỏ hàng trong database: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
 
   // Phương thức riêng để xóa khóa học khỏi Redis
-  private async removeCoursesFromRedisCart(userId: string, courseIds: string[]) {
+  private async removeCoursesFromRedisCart(
+    userId: string,
+    courseIds: string[],
+  ) {
     try {
       const cartKey = this.getCartKey(userId);
       const selectedCartKey = this.getSelectedCartKey(userId);
-      
+
       // Lấy giỏ hàng từ Redis
       let currentCart = await this.redisService.get<any>(cartKey);
-      let currentSelectedCart = await this.redisService.get<any>(selectedCartKey);
-      
-      this.logger.log(`[DEBUG] Giỏ hàng hiện tại trong Redis (Trước khi xóa): ${JSON.stringify(currentCart)}`);
-      this.logger.log(`[DEBUG] Khóa học đã chọn trong Redis (Trước khi xóa): ${JSON.stringify(currentSelectedCart)}`);
-      
+      let currentSelectedCart =
+        await this.redisService.get<any>(selectedCartKey);
+
+      this.logger.log(
+        `[DEBUG] Giỏ hàng hiện tại trong Redis (Trước khi xóa): ${JSON.stringify(currentCart)}`,
+      );
+      this.logger.log(
+        `[DEBUG] Khóa học đã chọn trong Redis (Trước khi xóa): ${JSON.stringify(currentSelectedCart)}`,
+      );
+
       // Xử lý nhiều định dạng có thể có của giỏ hàng trong Redis
       if (!currentCart) {
         currentCart = [];
@@ -439,45 +505,71 @@ export class CartService {
         try {
           currentCart = JSON.parse(currentCart);
         } catch (e) {
-          this.logger.error(`Lỗi khi phân tích chuỗi JSON của giỏ hàng: ${e.message}`);
+          this.logger.error(
+            `Lỗi khi phân tích chuỗi JSON của giỏ hàng: ${e.message}`,
+          );
           currentCart = [];
         }
       }
-      
+
       if (!currentSelectedCart) {
         currentSelectedCart = [];
       } else if (typeof currentSelectedCart === 'string') {
         try {
           currentSelectedCart = JSON.parse(currentSelectedCart);
         } catch (e) {
-          this.logger.error(`Lỗi khi phân tích chuỗi JSON của giỏ hàng đã chọn: ${e.message}`);
+          this.logger.error(
+            `Lỗi khi phân tích chuỗi JSON của giỏ hàng đã chọn: ${e.message}`,
+          );
           currentSelectedCart = [];
         }
       }
-      
+
       // Xử lý trường hợp giỏ hàng là mảng các đối tượng có thuộc tính courseId
-      if (Array.isArray(currentCart) && currentCart.length > 0 && typeof currentCart[0] === 'object' && currentCart[0].courseId) {
+      if (
+        Array.isArray(currentCart) &&
+        currentCart.length > 0 &&
+        typeof currentCart[0] === 'object' &&
+        currentCart[0].courseId
+      ) {
         // Định dạng là mảng các đối tượng { courseId: string, selected: boolean }
-        const updatedCart = currentCart.filter(item => !courseIds.includes(item.courseId));
+        const updatedCart = currentCart.filter(
+          (item) => !courseIds.includes(item.courseId),
+        );
         await this.redisService.set(cartKey, updatedCart);
-        this.logger.log(`[DEBUG] Đã xóa ${currentCart.length - updatedCart.length} khóa học khỏi giỏ hàng Redis (định dạng object)`);
-      } 
+        this.logger.log(
+          `[DEBUG] Đã xóa ${currentCart.length - updatedCart.length} khóa học khỏi giỏ hàng Redis (định dạng object)`,
+        );
+      }
       // Xử lý trường hợp giỏ hàng là mảng các chuỗi courseId
       else if (Array.isArray(currentCart)) {
-        const updatedCart = currentCart.filter(courseId => !courseIds.includes(courseId));
+        const updatedCart = currentCart.filter(
+          (courseId) => !courseIds.includes(courseId),
+        );
         await this.redisService.set(cartKey, updatedCart);
-        this.logger.log(`[DEBUG] Đã xóa ${currentCart.length - updatedCart.length} khóa học khỏi giỏ hàng Redis (định dạng mảng ID)`);
+        this.logger.log(
+          `[DEBUG] Đã xóa ${currentCart.length - updatedCart.length} khóa học khỏi giỏ hàng Redis (định dạng mảng ID)`,
+        );
       }
-      
+
       // Tương tự cho selected cart
-      if (Array.isArray(currentSelectedCart) && currentSelectedCart.length > 0 && typeof currentSelectedCart[0] === 'object' && currentSelectedCart[0].courseId) {
-        const updatedSelectedCart = currentSelectedCart.filter(item => !courseIds.includes(item.courseId));
+      if (
+        Array.isArray(currentSelectedCart) &&
+        currentSelectedCart.length > 0 &&
+        typeof currentSelectedCart[0] === 'object' &&
+        currentSelectedCart[0].courseId
+      ) {
+        const updatedSelectedCart = currentSelectedCart.filter(
+          (item) => !courseIds.includes(item.courseId),
+        );
         await this.redisService.set(selectedCartKey, updatedSelectedCart);
       } else if (Array.isArray(currentSelectedCart)) {
-        const updatedSelectedCart = currentSelectedCart.filter(courseId => !courseIds.includes(courseId));
+        const updatedSelectedCart = currentSelectedCart.filter(
+          (courseId) => !courseIds.includes(courseId),
+        );
         await this.redisService.set(selectedCartKey, updatedSelectedCart);
       }
-      
+
       // Xóa cache voucher nếu có
       try {
         await this.redisService.del(`${cartKey}:voucher`);
@@ -485,14 +577,19 @@ export class CartService {
       } catch (error) {
         this.logger.error(`Lỗi khi xóa cache voucher: ${error.message}`);
       }
-      
+
       // Kiểm tra giỏ hàng sau khi cập nhật
       const updatedCartCheck = await this.redisService.get<any>(cartKey);
-      this.logger.log(`[DEBUG] Giỏ hàng sau khi cập nhật trong Redis: ${JSON.stringify(updatedCartCheck)}`);
-      
+      this.logger.log(
+        `[DEBUG] Giỏ hàng sau khi cập nhật trong Redis: ${JSON.stringify(updatedCartCheck)}`,
+      );
+
       return true;
     } catch (error) {
-      this.logger.error(`Lỗi khi xóa khóa học khỏi Redis: ${error.message}`, error.stack);
+      this.logger.error(
+        `Lỗi khi xóa khóa học khỏi Redis: ${error.message}`,
+        error.stack,
+      );
       return false;
     }
   }
@@ -523,7 +620,7 @@ export class CartService {
         try {
           const result = await this.voucherService.applyVoucher(userId, {
             code: voucher.code,
-            courseIds ,
+            courseIds,
           });
 
           const totalDiscount = result.data.totalDiscount;
