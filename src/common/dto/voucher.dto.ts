@@ -49,10 +49,10 @@ export class CreateVoucherDto {
   @IsOptional()
   isActive?: boolean = true;
 
-  @IsArray()
+  // @IsArray()
   @IsUUID(undefined, { each: true })
   @IsOptional()
-  courseIds?: string[]; // if scope is SPECIFIC_COURSES
+  courseIds?: string; // if scope is SPECIFIC_COURSES
 
   @IsUUID()
   @IsOptional()
@@ -67,9 +67,8 @@ export class ApplyVoucherDto {
   @IsString()
   code: string;
 
-  @IsArray()
-  @IsUUID(undefined, { each: true })
-  courseIds: string[]; // list of course ids in cart
+  @IsString()
+  courseIds: string; // list of course ids in cart
 
   @IsBoolean()
   @IsOptional()
@@ -133,8 +132,7 @@ export class UpdateVoucherDto {
   @IsOptional()
   categoryId?: string;
 
-  @IsArray()
-  @IsUUID(undefined, { each: true })
+  @IsString()
   @IsOptional()
-  courseIds?: string[];
+  courseIds?: string;
 }

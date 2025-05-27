@@ -45,6 +45,61 @@ export class VoucherService {
     }
 
     return this.prisma.$transaction(async (tx) => {
+      // Nếu tạo voucher cho SPECIFIC_COURSES, deactivate voucher cũ cho course đó
+      if (
+        voucherData.scope === VoucherScopeEnum.SPECIFIC_COURSES &&
+        courseIds?.length
+      ) {
+        // Tìm và deactivate voucher cũ cho course này từ cùng creator
+        const existingVoucherCourses = await tx.tbl_voucher_courses.findMany({
+          where: {
+            courseId: courseIds,
+            tbl_vouchers: {
+              creatorId,
+              isActive: true,
+            },
+          },
+          include: {
+            tbl_vouchers: true,
+          },
+        });
+
+        if (existingVoucherCourses.length > 0) {
+          // Deactivate voucher cũ
+          for (const voucherCourse of existingVoucherCourses) {
+            await tx.tbl_voucher_courses.update({
+              where: { voucherCourseId: voucherCourse.voucherCourseId },
+              data: { isActive: false, updatedAt: new Date() },
+            });
+          }
+
+          // Cũng có thể deactivate voucher chính nếu không còn course nào active
+          const remainingActiveCourses = await tx.tbl_voucher_courses.findMany({
+            where: {
+              voucherId: {
+                in: existingVoucherCourses
+                  .map((vc) => vc.voucherId)
+                  .filter((id): id is string => id !== null),
+              },
+              isActive: true,
+            },
+          });
+
+          for (const voucherCourse of existingVoucherCourses) {
+            const hasActiveCourses = remainingActiveCourses.some(
+              (rac) => rac.voucherId === voucherCourse.voucherId,
+            );
+
+            if (!hasActiveCourses && voucherCourse.voucherId) {
+              await tx.tbl_vouchers.update({
+                where: { voucherId: voucherCourse.voucherId },
+                data: { isActive: false, updatedAt: new Date() },
+              });
+            }
+          }
+        }
+      }
+
       const voucher = await tx.tbl_vouchers.create({
         data: {
           voucherId,
@@ -60,12 +115,52 @@ export class VoucherService {
         voucherData.scope === VoucherScopeEnum.SPECIFIC_COURSES &&
         courseIds?.length
       ) {
-        const voucherCourseData = courseIds?.map((courseId) => ({
-          voucherCourseId: uuidv4(),
-          voucherId,
-          courseId,
-          createdAt: new Date(),
-        }));
+        // Lấy thông tin courses để lưu giá
+        const courses = await tx.tbl_courses.findMany({
+          where: { courseId: courseIds },
+          select: { courseId: true, price: true },
+        });
+
+        const voucherCourseData = courses.map((course) => {
+          // Tính toán discount cho course này
+          const originalPrice = Number(course.price);
+          let discountAmount = 0;
+
+          if (voucherData.discountType === 'Percentage') {
+            discountAmount =
+              originalPrice * (Number(voucherData.discountValue) / 100);
+
+            if (
+              voucherData.maxDiscount &&
+              discountAmount > Number(voucherData.maxDiscount)
+            ) {
+              discountAmount = Number(voucherData.maxDiscount);
+            }
+          } else {
+            discountAmount = Number(voucherData.discountValue);
+
+            if (discountAmount > originalPrice) {
+              discountAmount = originalPrice;
+            }
+          }
+
+          discountAmount = Math.round(discountAmount * 100) / 100;
+          const finalPrice = originalPrice - discountAmount;
+
+          return {
+            voucherCourseId: uuidv4(),
+            voucherId,
+            courseId: course.courseId,
+            originalPrice,
+            discountAmount,
+            finalPrice,
+            maxUsageCount: voucherData.maxUsage || null,
+            currentUsage: 0,
+            isActive: true,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+        });
 
         await tx.tbl_voucher_courses.createMany({
           data: voucherCourseData,
@@ -146,14 +241,14 @@ export class VoucherService {
         const instructorCourses = await this.prisma.tbl_courses.findMany({
           where: {
             instructorId: voucher.creatorId,
-            courseId: { in: courseIds },
+            courseId: courseIds,
           },
           select: { courseId: true },
         });
         applicableCourses = instructorCourses.map((course) => course.courseId);
       } else {
         // Nếu là voucher của admin, áp dụng cho tất cả khóa học
-        applicableCourses = courseIds;
+        applicableCourses = courseIds.split(',');
       }
     } else if (voucher.scope === VoucherScopeEnum.SPECIFIC_COURSES) {
       const voucherCourses = await this.prisma.tbl_voucher_courses.findMany({
@@ -162,9 +257,9 @@ export class VoucherService {
       });
 
       const vourcherCourseIds = voucherCourses.map((vc) => vc.courseId);
-      applicableCourses = courseIds.filter((id) =>
-        vourcherCourseIds.includes(id),
-      );
+      applicableCourses = courseIds
+        .split(',')
+        .filter((id) => vourcherCourseIds.includes(id));
 
       if (applicableCourses.length === 0) {
         throw new BadRequestException(
@@ -182,9 +277,7 @@ export class VoucherService {
         {
           where: {
             categoryId: voucher.categoryId,
-            courseId: {
-              in: courseIds, // check if the course is int the cart
-            },
+            courseId: courseIds,
           },
           select: {
             courseId: true,
@@ -788,14 +881,14 @@ export class VoucherService {
 
   private async validateInstructorPermissions(
     instructorId: string,
-    courseIds?: string[],
+    courseIds?: string,
     categoryId?: string,
     scope?: VoucherScopeEnum,
   ) {
     const foundInstructor = await this.prisma.tbl_instructors.findFirst({
       where: { userId: instructorId },
     });
-    
+
     const instructorCourses = await this.prisma.tbl_courses.findMany({
       where: { instructorId: foundInstructor?.instructorId },
       select: { courseId: true },
@@ -806,9 +899,9 @@ export class VoucherService {
 
     if (scope === VoucherScopeEnum.SPECIFIC_COURSES && courseIds?.length) {
       // Kiểm tra xem tất cả courseIds có thuộc về instructor không
-      const hasUnauthorizedCourses = courseIds.some(
-        (courseId) => !instructorCourseIds.includes(courseId),
-      );
+      const hasUnauthorizedCourses = courseIds
+        .split(',')
+        .some((courseId) => !instructorCourseIds.includes(courseId));
 
       if (hasUnauthorizedCourses) {
         throw new ForbiddenException(
@@ -937,13 +1030,52 @@ export class VoucherService {
           where: { voucherId },
         });
 
-        // Tạo liên kết mới
-        const voucherCourseData = courseIds.map((courseId) => ({
-          voucherCourseId: uuidv4(),
-          voucherId,
-          courseId,
-          createdAt: new Date(),
-        }));
+        // Lấy thông tin courses để tính toán giá
+        const courses = await tx.tbl_courses.findMany({
+          where: { courseId: courseIds },
+          select: { courseId: true, price: true },
+        });
+
+        const voucherCourseData = courses.map((course) => {
+          // Tính toán discount cho course này
+          const originalPrice = Number(course.price);
+          let discountAmount = 0;
+
+          if (voucherData.discountType === 'Percentage') {
+            discountAmount =
+              originalPrice * (Number(voucherData.discountValue) / 100);
+
+            if (
+              voucherData.maxDiscount &&
+              discountAmount > Number(voucherData.maxDiscount)
+            ) {
+              discountAmount = Number(voucherData.maxDiscount);
+            }
+          } else {
+            discountAmount = Number(voucherData.discountValue);
+
+            if (discountAmount > originalPrice) {
+              discountAmount = originalPrice;
+            }
+          }
+
+          discountAmount = Math.round(discountAmount * 100) / 100;
+          const finalPrice = originalPrice - discountAmount;
+
+          return {
+            voucherCourseId: uuidv4(),
+            voucherId,
+            courseId: course.courseId,
+            originalPrice,
+            discountAmount,
+            finalPrice,
+            maxUsageCount: voucherData.maxUsage || null,
+            currentUsage: 0,
+            isActive: true,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+        });
 
         await tx.tbl_voucher_courses.createMany({
           data: voucherCourseData,
@@ -1024,6 +1156,149 @@ export class VoucherService {
       success: true,
       message: `Voucher ${updatedVoucher.isActive ? 'activated' : 'deactivated'} successfully`,
       data: convertDecimalValues(updatedVoucher),
+    };
+  }
+
+  // Method mới để apply voucher và lưu vào database
+  async applyVoucherAndSaveToDB(
+    userId: string,
+    applyVoucherDto: ApplyVoucherDto,
+  ) {
+    const { code, courseIds } = applyVoucherDto;
+
+    const voucher = await this.prisma.tbl_vouchers.findUnique({
+      where: { code },
+      include: {
+        tbl_voucher_courses: {
+          where: { courseId: courseIds },
+          include: {
+            tbl_courses: {
+              select: { courseId: true, title: true, price: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!voucher) {
+      throw new NotFoundException('Voucher not found');
+    }
+
+    // Validate voucher (same as existing applyVoucher method)
+    if (!voucher.isActive) {
+      throw new BadRequestException('Voucher is not active');
+    }
+
+    const now = new Date();
+    if (voucher.startDate && voucher.startDate > now) {
+      throw new BadRequestException('Voucher is not yet valid');
+    }
+
+    if (voucher.endDate && voucher.endDate < now) {
+      throw new BadRequestException('Voucher has expired');
+    }
+    // Sử dụng data đã lưu trong tbl_voucher_courses
+    const applicableVoucherCourses = voucher.tbl_voucher_courses.filter(
+      (vc) =>
+        vc.isActive &&
+        (!vc.maxUsageCount || (vc.currentUsage ?? 0) < vc.maxUsageCount),
+    );
+
+    if (applicableVoucherCourses.length === 0) {
+      throw new BadRequestException(
+        'No applicable courses found or usage limit reached',
+      );
+    }
+
+    // Update usage count
+    await this.prisma.$transaction(async (tx) => {
+      for (const voucherCourse of applicableVoucherCourses) {
+        await tx.tbl_voucher_courses.update({
+          where: { voucherCourseId: voucherCourse.voucherCourseId },
+          data: {
+            currentUsage: { increment: 1 },
+            updatedAt: new Date(),
+          },
+        });
+      }
+    });
+
+    // Format response
+    const discountedCourses = applicableVoucherCourses.map((vc) => ({
+      courseId: vc.courseId,
+      title: vc.tbl_courses?.title,
+      originalPrice: Number(vc.originalPrice),
+      discountAmount: Number(vc.discountAmount),
+      finalPrice: Number(vc.finalPrice),
+    }));
+
+    const totalDiscount = discountedCourses.reduce(
+      (sum, course) => sum + course.discountAmount,
+      0,
+    );
+
+    return {
+      success: true,
+      data: {
+        voucher: convertDecimalValues(voucher),
+        discountedCourses,
+        totalDiscount,
+        totalFinalPrice: discountedCourses.reduce(
+          (sum, course) => sum + course.finalPrice,
+          0,
+        ),
+      },
+    };
+  }
+
+  // Method để get course với voucher đã apply
+  async getCourseWithAppliedVoucher(courseId: string) {
+    const course = await this.prisma.tbl_courses.findUnique({
+      where: { courseId },
+      include: {
+        tbl_voucher_courses: {
+          where: {
+            isActive: true,
+            tbl_vouchers: {
+              isActive: true,
+              startDate: { lte: new Date() },
+              endDate: { gte: new Date() },
+            },
+          },
+          include: {
+            tbl_vouchers: true,
+          },
+          orderBy: { discountAmount: 'desc' }, // Lấy voucher có discount cao nhất
+        },
+      },
+    });
+
+    if (!course) {
+      throw new NotFoundException('Course not found');
+    }
+
+    // Lấy voucher tốt nhất (nếu có)
+    const bestVoucherCourse = course.tbl_voucher_courses[0];
+
+    return {
+      success: true,
+      data: {
+        course: {
+          ...course,
+          currentPrice: bestVoucherCourse
+            ? Number(bestVoucherCourse.finalPrice)
+            : Number(course.price),
+          originalPrice: Number(course.price),
+          hasDiscount: !!bestVoucherCourse,
+          appliedVoucher: bestVoucherCourse
+            ? {
+                code: bestVoucherCourse.tbl_vouchers?.code,
+                discountAmount: Number(bestVoucherCourse.discountAmount),
+                discountType: bestVoucherCourse.tbl_vouchers?.discountType,
+              }
+            : null,
+        },
+      },
     };
   }
 }

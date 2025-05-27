@@ -132,4 +132,13 @@ export class VoucherController {
   ) {
     return this.voucherService.toggleVoucherActive(voucherId, userId, userRole);
   }
+
+  @Post('apply-and-save-db')
+  @UseGuards(JwtAuthGuard)
+  async applyVoucherAndSaveToDB(
+    @UserId() userId: string,
+    @Body() applyVoucherDto: ApplyVoucherDto,
+  ) {
+    return this.voucherService.applyVoucherAndSaveToDB(userId, applyVoucherDto);
+  }
 }

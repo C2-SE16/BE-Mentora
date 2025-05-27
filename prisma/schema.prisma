@@ -32,8 +32,8 @@ model tbl_categories {
   categoryId            String                  @id @db.Uuid
   name                  String?                 @db.VarChar
   description           String?
-  createdAt            DateTime?               @db.Timestamp(6)
-  updatedAt            DateTime?               @db.Timestamp(6)
+  createdAt             DateTime?               @db.Timestamp(6)
+  updatedAt             DateTime?               @db.Timestamp(6)
   tbl_course_categories tbl_course_categories[]
 }
 
@@ -211,7 +211,14 @@ model tbl_voucher_courses {
   voucherCourseId String        @id @db.Uuid
   voucherId       String?       @db.Uuid
   courseId        String?       @db.Uuid
+  originalPrice   Decimal?      @db.Decimal
+  discountAmount  Decimal?      @db.Decimal
+  finalPrice      Decimal?      @db.Decimal
+  maxUsageCount   Int?          @default(0)
+  currentUsage    Int?          @default(0)
+  isActive        Boolean?      @default(true)
   createdAt       DateTime?     @db.Timestamp(6)
+  updatedAt       DateTime?     @db.Timestamp(6)
   tbl_courses     tbl_courses?  @relation(fields: [courseId], references: [courseId], onDelete: NoAction, onUpdate: NoAction)
   tbl_vouchers    tbl_vouchers? @relation(fields: [voucherId], references: [voucherId], onDelete: NoAction, onUpdate: NoAction)
 }

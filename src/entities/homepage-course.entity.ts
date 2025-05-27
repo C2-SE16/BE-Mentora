@@ -1,6 +1,4 @@
 import { Exclude, Type } from 'class-transformer';
-import { category_enum } from '@prisma/client';
-
 export class HomepageCourseEntity {
   id: string;
   title: string;
@@ -8,7 +6,7 @@ export class HomepageCourseEntity {
   rating?: number = 0;
   reviews?: number = 0;
   currentPrice: string;
-  originalPrice: string;
+  originalPrice?: string;
   isBestSeller?: boolean = false;
   image: string;
   createdAt: Date;
@@ -18,9 +16,14 @@ export class HomepageCourseEntity {
   hasDiscount?: boolean;
   discountPercentage?: number;
   voucherCode?: string;
+  appliedVoucher?: {
+    code?: string | null;
+    discountAmount: number;
+    discountType?: string | null;
+  };
   categories?: {
     id?: string;
-    name?: category_enum | string | null;
+    name?: string | null;
   }[] = [];
 
   @Exclude()
@@ -33,7 +36,7 @@ export class HomepageCourseEntity {
 
 export class HomepageTopicEntity {
   id: string;
-  name: category_enum | string | null;
+  name: string | null;
   courseCount: number;
 
   constructor(partial: Partial<HomepageTopicEntity>) {

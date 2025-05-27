@@ -60,7 +60,7 @@ export class CartService {
     currentCart.push(courseId);
     await this.redisService.set(cartKey, currentCart);
 
-    await this.applyBestVoucherAutomatically(userId, currentCart);
+    await this.applyBestVoucherAutomatically(userId, currentCart.join(','));
 
     return {
       message: 'Đã thêm khóa học vào giỏ hàng thành công',
@@ -96,7 +96,7 @@ export class CartService {
 
       // Cập nhật lại voucher nếu còn khóa học trong giỏ hàng
       if (updatedCart.length > 0) {
-        await this.applyBestVoucherAutomatically(userId, updatedCart);
+        await this.applyBestVoucherAutomatically(userId, updatedCart.join(','));
       }
 
       // Xóa cache của giỏ hàng
@@ -497,7 +497,7 @@ export class CartService {
     }
   }
 
-  async applyBestVoucherAutomatically(userId: string, courseIds: string[]) {
+  async applyBestVoucherAutomatically(userId: string, courseIds: string) {
     try {
       // Lấy tất cả voucher có thể áp dụng
       const { data: voucherResponse } =
@@ -523,7 +523,7 @@ export class CartService {
         try {
           const result = await this.voucherService.applyVoucher(userId, {
             code: voucher.code,
-            courseIds,
+            courseIds ,
           });
 
           const totalDiscount = result.data.totalDiscount;
@@ -557,7 +557,7 @@ export class CartService {
     // Gọi đến VoucherService để áp dụng voucher
     const voucherResult = await this.voucherService.applyVoucher(userId, {
       code,
-      courseIds,
+      courseIds: courseIds.join(','),
     });
 
     // Lưu thông tin voucher đã áp dụng vào Redis

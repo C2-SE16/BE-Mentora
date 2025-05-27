@@ -41,7 +41,33 @@ export interface HomepageCourse {
     courseCategoryId: string;
     tbl_categories?: {
       categoryId: string;
-      categoryType?: string | null;
+      name?: string | null;
+    } | null;
+  }[];
+  tbl_voucher_courses?: {
+    voucherCourseId: string;
+    voucherId?: string | null;
+    courseId?: string | null;
+    originalPrice?: Decimal | null;
+    discountAmount?: Decimal | null;
+    finalPrice?: Decimal | null;
+    maxUsageCount?: number | null;
+    currentUsage?: number | null;
+    isActive?: boolean | null;
+    createdAt?: Date | null;
+    updatedAt?: Date | null;
+    tbl_vouchers?: {
+      voucherId: string;
+      code?: string | null;
+      description?: string | null;
+      scope?: string | null;
+      discountType?: string | null;
+      discountValue?: Decimal | null;
+      maxDiscount?: Decimal | null;
+      startDate?: Date | null;
+      endDate?: Date | null;
+      maxUsage?: number | null;
+      isActive?: boolean | null;
     } | null;
   }[];
 }
