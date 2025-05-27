@@ -18,6 +18,24 @@ export class CurriculumProgressController {
   constructor(private readonly progressService: ProgressService) {}
 
   @UseGuards(JwtAuthGuard)
+  @Get('course/:courseId')
+  async getCourseProgress(@Param('courseId') courseId: string, @Req() req) {
+    try {
+      const userId = req.user.userId;
+      const result = await this.progressService.getCourseProgress(userId, courseId);
+      return result;
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        'Error getting course progress',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get(':curriculumId')
   async checkCurriculumCompletion(
     @Param('curriculumId') curriculumId: string,

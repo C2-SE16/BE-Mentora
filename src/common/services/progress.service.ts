@@ -69,6 +69,9 @@ export class ProgressService {
     // Kiểm tra lecture tồn tại
     const lecture = await this.prismaService.tbl_lectures.findUnique({
       where: { lectureId: body.lectureId },
+      include: {
+        tbl_curricula: true
+      }
     });
     if (!lecture) {
       throw new HttpException('Lecture not found', HttpStatus.NOT_FOUND);
@@ -98,6 +101,47 @@ export class ProgressService {
         updatedAt: new Date(),
       },
     });
+
+    // Kiểm tra và cập nhật tiến độ curriculum
+    if (lecture.tbl_curricula) {
+      const curriculumId = lecture.tbl_curricula.curriculumId;
+
+      // Kiểm tra tiến độ curriculum hiện tại
+      const curriculumProgress = await this.prismaService.tbl_curriculum_progress.findFirst({
+        where: {
+          userId: body.userId,
+          curriculumId: curriculumId
+        }
+      });
+
+      if (curriculumProgress) {
+        // Cập nhật tiến độ curriculum hiện có nếu chưa hoàn thành
+        if (curriculumProgress.status !== 'COMPLETED') {
+          await this.prismaService.tbl_curriculum_progress.update({
+            where: {
+              progressId: curriculumProgress.progressId
+            },
+            data: {
+              status: 'IN_PROGRESS',
+              updatedAt: new Date()
+            }
+          });
+        }
+      } else {
+        // Tạo mới tiến độ curriculum nếu chưa tồn tại
+        await this.prismaService.tbl_curriculum_progress.create({
+          data: {
+            progressId: uuidv4(),
+            userId: body.userId,
+            curriculumId: curriculumId,
+            status: 'IN_PROGRESS',
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
+        });
+      }
+    }
+
     return {
       progress,
     };
@@ -130,7 +174,55 @@ export class ProgressService {
         completedAt: body.completedAt ? new Date(body.completedAt) : undefined,
         updatedAt: new Date(),
       },
+      include: {
+        tbl_lectures: {
+          include: {
+            tbl_curricula: true
+          }
+        }
+      }
     });
+
+    // Nếu bài học đã hoàn thành, cập nhật tiến độ curriculum
+    if (body.status === 'COMPLETED' && progress.tbl_lectures?.tbl_curricula) {
+      const curriculumId = progress.tbl_lectures.tbl_curricula.curriculumId;
+
+      // Kiểm tra tiến độ curriculum hiện tại
+      const curriculumProgress = await this.prismaService.tbl_curriculum_progress.findFirst({
+        where: {
+          userId: progress.userId,
+          curriculumId: curriculumId
+        }
+      });
+
+      if (curriculumProgress) {
+        // Cập nhật tiến độ curriculum hiện có
+        await this.prismaService.tbl_curriculum_progress.update({
+          where: {
+            progressId: curriculumProgress.progressId
+          },
+          data: {
+            status: 'COMPLETED',
+            completedAt: new Date(),
+            updatedAt: new Date()
+          }
+        });
+      } else {
+        // Tạo mới tiến độ curriculum nếu chưa tồn tại
+        await this.prismaService.tbl_curriculum_progress.create({
+          data: {
+            progressId: uuidv4(),
+            userId: progress.userId,
+            curriculumId: curriculumId,
+            status: 'COMPLETED',
+            completedAt: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
+        });
+      }
+    }
+
     return {
       progress,
     };
@@ -169,6 +261,9 @@ export class ProgressService {
     // Kiểm tra bài giảng tồn tại và có video
     const lecture = await this.prismaService.tbl_lectures.findUnique({
       where: { lectureId },
+      include: {
+        tbl_curricula: true
+      }
     });
     if (!lecture) {
       throw new HttpException('Lecture not found', HttpStatus.NOT_FOUND);
@@ -207,6 +302,58 @@ export class ProgressService {
     // Cần hoàn thành ít nhất 2/3 thời lượng
     const canProceed = completionRatio >= 2 / 3;
 
+    // Nếu đã hoàn thành đủ 2/3 thời lượng và trạng thái chưa là COMPLETED, cập nhật trạng thái
+    if (canProceed && progress.status !== 'COMPLETED') {
+      await this.prismaService.tbl_lecture_progress.update({
+        where: { progressId: progress.progressId },
+        data: {
+          status: 'COMPLETED',
+          completedAt: new Date(),
+          updatedAt: new Date()
+        }
+      });
+
+      // Cập nhật tiến độ curriculum nếu có
+      if (lecture.tbl_curricula) {
+        const curriculumId = lecture.tbl_curricula.curriculumId;
+
+        // Kiểm tra tiến độ curriculum hiện tại
+        const curriculumProgress = await this.prismaService.tbl_curriculum_progress.findFirst({
+          where: {
+            userId: userId,
+            curriculumId: curriculumId
+          }
+        });
+
+        if (curriculumProgress) {
+          // Cập nhật tiến độ curriculum hiện có
+          await this.prismaService.tbl_curriculum_progress.update({
+            where: {
+              progressId: curriculumProgress.progressId
+            },
+            data: {
+              status: 'COMPLETED',
+              completedAt: new Date(),
+              updatedAt: new Date()
+            }
+          });
+        } else {
+          // Tạo mới tiến độ curriculum nếu chưa tồn tại
+          await this.prismaService.tbl_curriculum_progress.create({
+            data: {
+              progressId: uuidv4(),
+              userId: userId,
+              curriculumId: curriculumId,
+              status: 'COMPLETED',
+              completedAt: new Date(),
+              createdAt: new Date(),
+              updatedAt: new Date()
+            }
+          });
+        }
+      }
+    }
+
     return {
       canProceed,
       message: canProceed ?
@@ -229,6 +376,9 @@ export class ProgressService {
     // Kiểm tra quiz tồn tại
     const quiz = await this.prismaService.tbl_quizzes.findUnique({
       where: { quizId },
+      include: {
+        tbl_curricula: true
+      }
     });
 
     if (!quiz) {
@@ -259,6 +409,46 @@ export class ProgressService {
     // Kiểm tra lần thử gần nhất có đạt điểm đỗ không
     const latestAttempt = attempts[0];
     const isPassed = latestAttempt.isPassed;
+
+    // Nếu đã vượt qua bài kiểm tra, cập nhật tiến độ curriculum
+    if (isPassed && quiz.tbl_curricula) {
+      const curriculumId = quiz.tbl_curricula.curriculumId;
+
+      // Kiểm tra tiến độ curriculum hiện tại
+      const curriculumProgress = await this.prismaService.tbl_curriculum_progress.findFirst({
+        where: {
+          userId: userId,
+          curriculumId: curriculumId
+        }
+      });
+
+      if (curriculumProgress) {
+        // Cập nhật tiến độ curriculum hiện có
+        await this.prismaService.tbl_curriculum_progress.update({
+          where: {
+            progressId: curriculumProgress.progressId
+          },
+          data: {
+            status: 'COMPLETED',
+            completedAt: new Date(),
+            updatedAt: new Date()
+          }
+        });
+      } else {
+        // Tạo mới tiến độ curriculum nếu chưa tồn tại
+        await this.prismaService.tbl_curriculum_progress.create({
+          data: {
+            progressId: uuidv4(),
+            userId: userId,
+            curriculumId: curriculumId,
+            status: 'COMPLETED',
+            completedAt: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
+        });
+      }
+    }
 
     return {
       canProceed: isPassed,
@@ -372,6 +562,151 @@ export class ProgressService {
       canProceed: true,
       message: 'Có thể chuyển sang bài học tiếp theo',
       currentProgress
+    };
+  }
+
+  /**
+   * Lấy tiến trình của tất cả curriculum trong một khóa học
+   * @param userId ID của người dùng
+   * @param courseId ID của khóa học
+   * @returns Danh sách tiến trình của các curriculum trong khóa học
+   */
+  async getCourseProgress(userId: string, courseId: string) {
+    // Kiểm tra user tồn tại
+    const user = await this.prismaService.tbl_users.findUnique({
+      where: { userId },
+    });
+    if (!user) {
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    }
+
+    // Kiểm tra course tồn tại
+    const course = await this.prismaService.tbl_courses.findUnique({
+      where: { courseId },
+    });
+    if (!course) {
+      throw new HttpException('Course not found', HttpStatus.NOT_FOUND);
+    }
+
+    // Lấy tất cả modules trong course
+    const modules = await this.prismaService.tbl_modules.findMany({
+      where: { courseId },
+      orderBy: { orderIndex: 'asc' },
+      include: {
+        tbl_curricula: {
+          orderBy: { orderIndex: 'asc' },
+          include: {
+            tbl_lectures: true,
+            tbl_quizzes: true,
+          },
+        },
+      },
+    });
+
+    // Lấy tất cả curriculum progress của user
+    const curriculumProgress = await this.prismaService.tbl_curriculum_progress.findMany({
+      where: { userId },
+    });
+
+    // Tạo map để dễ dàng tra cứu
+    const progressMap = new Map();
+    curriculumProgress.forEach(progress => {
+      progressMap.set(progress.curriculumId, progress);
+    });
+
+    // Tính toán tiến độ cho từng module và curriculum
+    const result = await Promise.all(
+      modules.map(async (module) => {
+        const curriculaWithProgress = await Promise.all(
+          module.tbl_curricula.map(async (curriculum) => {
+            // Lấy progress hiện tại từ map
+            const progress = progressMap.get(curriculum.curriculumId);
+
+            // Tạo đối tượng kết quả cơ bản
+            const curriculumResult = {
+              curriculumId: curriculum.curriculumId,
+              title: curriculum.title,
+              orderIndex: curriculum.orderIndex,
+              type: curriculum.type,
+              description: curriculum.description,
+              progress: {
+                status: progress ? progress.status : 'NOT_STARTED',
+                completedAt: progress ? progress.completedAt : null,
+                progressId: progress ? progress.progressId : null
+              }
+            };
+
+            // Thêm thông tin chi tiết dựa vào loại curriculum
+            if (curriculum.type === 'LECTURE' && curriculum.tbl_lectures && curriculum.tbl_lectures.length > 0) {
+              curriculumResult['lecture'] = {
+                lectureId: curriculum.tbl_lectures[0].lectureId,
+                title: curriculum.tbl_lectures[0].title,
+                description: curriculum.tbl_lectures[0].description,
+                videoUrl: curriculum.tbl_lectures[0].videoUrl,
+                articleContent: curriculum.tbl_lectures[0].articleContent,
+                duration: curriculum.tbl_lectures[0].duration,
+                isFree: curriculum.tbl_lectures[0].isFree
+              };
+            } else if (curriculum.type === 'QUIZ' && curriculum.tbl_quizzes && curriculum.tbl_quizzes.length > 0) {
+              curriculumResult['quiz'] = {
+                quizId: curriculum.tbl_quizzes[0].quizId,
+                title: curriculum.tbl_quizzes[0].title,
+                description: curriculum.tbl_quizzes[0].description,
+                passingScore: curriculum.tbl_quizzes[0].passingScore,
+                timeLimit: curriculum.tbl_quizzes[0].timeLimit,
+                isFree: curriculum.tbl_quizzes[0].isFree
+              };
+            }
+
+            // Nếu chưa có progress, kiểm tra trạng thái hiện tại
+            if (!progress) {
+              try {
+                const curriculumStatus = await this.hasCurriculumCompleted(userId, curriculum.curriculumId);
+                curriculumResult.progress.status = curriculumStatus.canProceed ? 'COMPLETED' : 'NOT_STARTED';
+              } catch (error) {
+                // Nếu có lỗi, giữ nguyên trạng thái NOT_STARTED
+              }
+            }
+
+            return curriculumResult;
+          })
+        );
+
+        // Tính tiến độ cho module
+        const totalCurricula = module.tbl_curricula.length;
+        const completedCurricula = curriculaWithProgress.filter(
+          c => c.progress.status === 'COMPLETED'
+        ).length;
+        const progressPercentage = totalCurricula > 0
+          ? Math.round((completedCurricula / totalCurricula) * 100)
+          : 0;
+
+        return {
+          moduleId: module.moduleId,
+          title: module.title,
+          orderIndex: module.orderIndex,
+          description: module.description,
+          totalCurricula,
+          completedCurricula,
+          progressPercentage,
+          curricula: curriculaWithProgress
+        };
+      })
+    );
+
+    // Tính tiến độ tổng thể của khóa học
+    const totalCurricula = result.reduce((total, module) => total + module.totalCurricula, 0);
+    const completedCurricula = result.reduce((total, module) => total + module.completedCurricula, 0);
+    const overallProgressPercentage = totalCurricula > 0
+      ? Math.round((completedCurricula / totalCurricula) * 100)
+      : 0;
+
+    return {
+      courseId,
+      totalCurricula,
+      completedCurricula,
+      overallProgressPercentage,
+      modules: result
     };
   }
 }

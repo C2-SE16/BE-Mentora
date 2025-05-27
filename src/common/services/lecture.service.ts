@@ -54,10 +54,10 @@ export class LectureService {
     console.log('===== UPDATE LECTURE SERVICE =====');
     console.log('Lecture ID:', lectureId);
     console.log('Update data:', JSON.stringify(updateLectureDto));
-    
+
     // Log stack trace để xác định nguồn gốc cuộc gọi
     console.log('Stack trace:', new Error().stack);
-    
+
     // Kiểm tra xem lecture có tồn tại không
     const existingLecture = await this.prismaService.tbl_lectures.findUnique({
       where: { lectureId },
@@ -70,26 +70,29 @@ export class LectureService {
 
     console.log('Lecture hiện tại:', JSON.stringify(existingLecture));
 
+    // Kiểm tra nguồn gốc của cuộc gọi, xem có phải từ upload controller hay không
+    const isFromUploadController = new Error().stack?.includes('upload.controller') || false;
+    console.log('Cuộc gọi từ upload controller?', isFromUploadController);
+
     // Kiểm tra giá trị duration hợp lý
     if (updateLectureDto.duration !== undefined) {
-      // Kiểm tra các giá trị bất thường cụ thể
-      if (updateLectureDto.duration === 14350) {
-        console.log(`Phát hiện giá trị duration bất thường: 14350 giây`);
-        if (existingLecture.duration && existingLecture.duration > 0 && existingLecture.duration < 3600) {
+      // Nếu đã có duration hợp lệ và cuộc gọi không phải từ upload controller, giữ nguyên giá trị cũ
+      if (existingLecture.duration && existingLecture.duration > 0 && existingLecture.duration < 1000 && !isFromUploadController) {
+        console.log(`Giữ nguyên giá trị duration cũ (${existingLecture.duration}) vì cuộc gọi không phải từ upload controller`);
+        updateLectureDto.duration = existingLecture.duration;
+      }
+      // Nếu duration quá lớn (> 24 giờ = 86400 giây)
+      else if (updateLectureDto.duration > 86400) {
+        console.log(`Phát hiện duration không hợp lý: ${updateLectureDto.duration} giây, lớn hơn 24 giờ`);
+        // Sử dụng giá trị cũ nếu có, nếu không thì đặt giá trị mặc định là 0
+        if (existingLecture.duration && existingLecture.duration > 0 && existingLecture.duration < 86400) {
           console.log(`Giữ nguyên giá trị cũ: ${existingLecture.duration} giây`);
           updateLectureDto.duration = existingLecture.duration;
         } else {
-          console.log('Bỏ qua cập nhật duration');
+          console.log('Bỏ qua cập nhật duration vì giá trị không hợp lý');
           delete updateLectureDto.duration;
         }
       }
-      // Nếu duration quá lớn (> 10 giờ = 36000 giây) và đã có duration trước đó hợp lý
-      else if (updateLectureDto.duration > 36000 && existingLecture.duration && existingLecture.duration < 36000) {
-        console.log(`Phát hiện duration không hợp lý: ${updateLectureDto.duration} giây`);
-        console.log(`Giữ nguyên giá trị cũ: ${existingLecture.duration} giây`);
-        updateLectureDto.duration = existingLecture.duration;
-      }
-      
       // Nếu duration âm hoặc 0, coi như không hợp lệ
       else if (updateLectureDto.duration <= 0) {
         console.log(`Phát hiện duration không hợp lệ: ${updateLectureDto.duration} giây`);
@@ -99,6 +102,18 @@ export class LectureService {
         } else {
           console.log('Bỏ qua cập nhật duration');
           delete updateLectureDto.duration;
+        }
+      }
+      // Trường hợp duration hợp lệ từ upload controller và khác với giá trị hiện tại
+      else if (isFromUploadController && existingLecture.duration !== updateLectureDto.duration) {
+        console.log(`Cập nhật duration từ ${existingLecture.duration} thành ${updateLectureDto.duration} từ upload controller`);
+      }
+      // Trường hợp duration quá lớn (> 1000 giây) và không phải từ upload controller
+      else if (updateLectureDto.duration > 1000 && !isFromUploadController) {
+        console.log(`Phát hiện duration khả nghi (${updateLectureDto.duration} giây) từ nguồn không phải upload controller`);
+        if (existingLecture.duration && existingLecture.duration > 0 && existingLecture.duration < 1000) {
+          console.log(`Giữ nguyên giá trị cũ: ${existingLecture.duration} giây`);
+          updateLectureDto.duration = existingLecture.duration;
         }
       }
     }

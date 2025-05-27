@@ -68,6 +68,12 @@ export class UploadController {
               throw new Error(`Thời lượng không hợp lệ: ${roundedDuration}`);
             }
 
+            // Kiểm tra xem giá trị có bất thường không (quá lớn)
+            if (roundedDuration > 7200) { // Nếu lớn hơn 2 giờ, coi là bất thường
+              console.error(`Thời lượng có vẻ bất thường (${roundedDuration} giây), thử lại với ffprobe`);
+              throw new Error('Thời lượng bất thường, chuyển sang phương pháp khác');
+            }
+
             resolve(roundedDuration);
           })
           .catch(err => {
@@ -109,6 +115,13 @@ export class UploadController {
                 if (isNaN(roundedDuration) || roundedDuration <= 0 || roundedDuration > 86400) {
                   console.error(`Thời lượng không hợp lệ: ${roundedDuration}`);
                   return reject(new Error(`Thời lượng không hợp lệ: ${roundedDuration}`));
+                }
+
+                // Kiểm tra giá trị bất thường
+                if (roundedDuration > 7200) { // Nếu lớn hơn 2 giờ, có thể bất thường
+                  console.error(`Thời lượng ffprobe có vẻ bất thường: ${roundedDuration} giây`);
+                  // Sử dụng một giá trị mặc định an toàn hoặc từ chối
+                  return reject(new Error(`Thời lượng bất thường: ${roundedDuration} giây`));
                 }
 
                 resolve(roundedDuration);
@@ -346,14 +359,40 @@ export class UploadController {
       finalDuration = Math.round(duration);
       console.log(`Thời lượng cuối cùng (đã làm tròn): ${finalDuration} giây`);
 
+      // Kiểm tra và đảm bảo giá trị hợp lý trước khi cập nhật
+      if (finalDuration > 7200) { // > 2 giờ
+        console.error(`Phát hiện thời lượng bất thường: ${finalDuration} giây`);
+        throw new Error(`Thời lượng bất thường: ${finalDuration} giây`);
+      }
+
+      // Lấy thông tin lecture hiện tại
+      const currentLecture = await this.lectureService.getLectureById(lectureId);
+      console.log('Lecture hiện tại trước khi cập nhật:', JSON.stringify(currentLecture));
+
+      // Kiểm tra nếu đã có duration lớn hơn 0 và có sự chênh lệch lớn
+      if (currentLecture.duration && currentLecture.duration > 0) {
+        const durationDiff = Math.abs(currentLecture.duration - finalDuration);
+        // Nếu chênh lệch trên 50%, ghi log cảnh báo
+        if (durationDiff / currentLecture.duration > 0.5) {
+          console.log(`CẢNH BÁO: Chênh lệch lớn giữa duration hiện tại (${currentLecture.duration}) và mới tính (${finalDuration})`);
+        }
+      }
+
       // Cập nhật thông tin vào database
       console.log('Đang cập nhật lecture với ID:', lectureId);
       console.log('Dữ liệu cập nhật: videoUrl =', relativePath, 'duration =', finalDuration);
 
-      const updatedLecture = await this.lectureService.updateLecture(lectureId, {
+      // Kiểm tra và hiển thị giá trị cuối cùng trước khi cập nhật
+      console.log('Giá trị duration cuối cùng trước khi gửi đến service:', finalDuration);
+
+      const updateLectureData = {
         videoUrl: relativePath,
         duration: finalDuration, // Lưu thời lượng thực tế theo giây
-      });
+      };
+
+      console.log('Dữ liệu gửi đến service:', JSON.stringify(updateLectureData));
+
+      const updatedLecture = await this.lectureService.updateLecture(lectureId, updateLectureData);
       console.log('Kết quả cập nhật:', JSON.stringify(updatedLecture));
 
       console.log(`Đã cập nhật thông tin video và thời lượng (${finalDuration} giây) vào database cho bài giảng ${lectureId}`);
