@@ -3,6 +3,7 @@ import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Cache } from 'cache-manager';
 import { v4 as uuidv4 } from 'uuid';
 import { PrismaService } from '../prisma/prisma.service';
+import { ProgressService } from './progress.service';
 
 export interface AttemptCache {
   startTime: number;
@@ -18,7 +19,8 @@ export class QuizAttemptService {
   constructor(
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
     private readonly prisma: PrismaService,
-  ) {}
+    private readonly progressService: ProgressService,
+  ) { }
 
   private getKey(attemptId: string): string {
     return `quiz-attempt:${attemptId}`;
@@ -283,7 +285,7 @@ export class QuizAttemptService {
 
       const isCorrect = Array.isArray(selectedAnswers)
         ? correctAnswers.length === selectedAnswers.length &&
-          correctAnswers.every((ans) => selectedAnswers.includes(ans))
+        correctAnswers.every((ans) => selectedAnswers.includes(ans))
         : correctAnswers.length === 1 && correctAnswers[0] === selectedAnswers;
 
       const quizAnswer = await this.prisma.tbl_quiz_answers.create({
@@ -303,6 +305,20 @@ export class QuizAttemptService {
 
     // Xóa cache sau khi submit thành công
     await this.cacheManager.del(key);
+
+    // Cập nhật curriculum progress nếu đạt yêu cầu
+    if (quizAttempt.isPassed) {
+      try {
+        console.log('Updating curriculum progress...');
+        await this.progressService.hasCompletedQuiz(
+          attempt.userId,
+          attempt.quizId
+        );
+        console.log('Curriculum progress updated successfully');
+      } catch (error) {
+        console.error('Error updating curriculum progress:', error);
+      }
+    }
 
     return {
       score,
