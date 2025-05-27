@@ -277,10 +277,28 @@ export class CourseService {
             tbl_users: true,
           },
         },
+        tbl_voucher_courses: {
+          where: {
+            isActive: true,
+            tbl_vouchers: {
+              isActive: true,
+              startDate: { lte: new Date() },
+              endDate: { gte: new Date() },
+            },
+          },
+          include: {
+            tbl_vouchers: true,
+          },
+          orderBy: { discountAmount: 'desc' },
+        },
       },
     });
 
     if (!course) return null;
+
+    // Lấy voucher tốt nhất (nếu có)
+    const bestVoucherCourse = course.tbl_voucher_courses[0];
+
     return {
       courseId: course.courseId,
       instructorId: course.instructorId,
@@ -289,6 +307,12 @@ export class CourseService {
       overview: course.overview,
       durationTime: course.durationTime,
       price: course.price ? Number(course.price) : 0,
+      // Thêm thông tin giá sau khi áp dụng voucher
+      currentPrice: bestVoucherCourse
+        ? Number(bestVoucherCourse.finalPrice)
+        : Number(course.price || 0),
+      originalPrice: Number(course.price || 0),
+      hasDiscount: !!bestVoucherCourse,
       approved: course.approved,
       rating: course.rating ? Number(course.rating) : 0,
       comment: course.comment,
@@ -444,6 +468,24 @@ export class CourseService {
               avatar: enrollment.tbl_users.avatar,
             }
           : null,
+      })),
+      // Thêm thông tin voucher
+      appliedVoucher: bestVoucherCourse
+        ? {
+            code: bestVoucherCourse.tbl_vouchers?.code,
+            discountAmount: Number(bestVoucherCourse.discountAmount),
+            discountType: bestVoucherCourse.tbl_vouchers?.discountType,
+            finalPrice: Number(bestVoucherCourse.finalPrice),
+          }
+        : null,
+      availableVouchers: course.tbl_voucher_courses.map((voucherCourse) => ({
+        voucherCourseId: voucherCourse.voucherCourseId,
+        code: voucherCourse.tbl_vouchers?.code,
+        discountAmount: Number(voucherCourse.discountAmount),
+        discountType: voucherCourse.tbl_vouchers?.discountType,
+        finalPrice: Number(voucherCourse.finalPrice),
+        startDate: voucherCourse.tbl_vouchers?.startDate,
+        endDate: voucherCourse.tbl_vouchers?.endDate,
       })),
     };
   }
