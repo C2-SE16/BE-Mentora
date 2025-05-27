@@ -245,11 +245,6 @@ export class CourseService {
           },
         },
         tbl_course_target_audience: true,
-        tbl_course_categories: {
-          include: {
-            tbl_categories: true,
-          },
-        },
         tbl_modules: {
           orderBy: {
             orderIndex: 'asc',
@@ -278,9 +273,15 @@ export class CourseService {
             },
           },
         },
-        tbl_course_enrollments: {
+        tbl_voucher_courses: {
+          where: {
+            tbl_vouchers: {
+              startDate: { lte: new Date() },
+              endDate: { gte: new Date() },
+            },
+          },
           include: {
-            tbl_users: true,
+            tbl_vouchers: true,
           },
         },
       },
@@ -301,11 +302,6 @@ export class CourseService {
       thumbnail: course.thumbnail,
       createdAt: course.createdAt,
       updatedAt: course.updatedAt,
-      categories: course.tbl_course_categories.map((category) => ({
-        categoryId: category.tbl_categories?.categoryId,
-        name: category.tbl_categories?.name,
-        description: category.tbl_categories?.description,
-      })),
       reviews: course.tbl_course_reviews.map((review) => ({
         reviewId: review.reviewId,
         courseId: review.courseId,
@@ -437,19 +433,6 @@ export class CourseService {
             })),
           })),
         })),
-      })),
-      enrollments: course.tbl_course_enrollments.map((enrollment) => ({
-        userId: enrollment.userId,
-        courseEnrollmentId: enrollment.courseEnrollmentId,
-        enrolledAt: enrollment.enrolledAt,
-        courseId: enrollment.courseId,
-        user: enrollment.tbl_users
-          ? {
-              userId: enrollment.tbl_users.userId,
-              fullName: enrollment.tbl_users.fullName,
-              avatar: enrollment.tbl_users.avatar,
-            }
-          : null,
       })),
     };
   }
@@ -677,89 +660,37 @@ export class CourseService {
             },
           },
           tbl_course_reviews: true,
-          tbl_course_enrollments: {
-            include: {
-              tbl_users: true,
-            },
-          },
-          tbl_voucher_courses: {
-            where: {
-              isActive: true,
-              tbl_vouchers: {
-                isActive: true,
-                startDate: { lte: new Date() },
-                endDate: { gte: new Date() },
-              },
-            },
-            include: {
-              tbl_vouchers: true,
-            },
-            orderBy: { discountAmount: 'desc' },
-          },
         },
         orderBy: {
           createdAt: 'desc',
         },
       });
 
-      return courses.map((course) => {
-        // Lấy voucher tốt nhất (nếu có)
-        const bestVoucherCourse = course.tbl_voucher_courses[0];
-
-        return {
-          courseId: course.courseId,
-          title: course.title,
-          description: course.description,
-          overview: course.overview,
-          durationTime: course.durationTime,
-          price: course.price ? Number(course.price) : 0,
-          // Thêm thông tin giá sau khi áp dụng voucher
-          currentPrice: bestVoucherCourse
-            ? Number(bestVoucherCourse.finalPrice)
-            : Number(course.price || 0),
-          originalPrice: Number(course.price || 0),
-          hasDiscount: !!bestVoucherCourse,
-          approved: course.approved,
-          rating: course.rating ? Number(course.rating) : 0,
-          thumbnail: course.thumbnail,
-          createdAt: course.createdAt,
-          updatedAt: course.updatedAt,
-          categories: course.tbl_course_categories.map((category) => ({
-            categoryId: category.categoryId,
-            name: category.tbl_categories?.name,
-          })),
-          instructor: course.tbl_instructors
-            ? {
-              instructorId: course.tbl_instructors.instructorId,
-              name: course.tbl_instructors.tbl_users?.fullName,
-              avatar: course.tbl_instructors.tbl_users?.avatar,
-            }
-            : null,
-          reviewCount: course.tbl_course_reviews.length,
-          // Thêm thông tin voucher đã áp dụng
-          appliedVoucher: bestVoucherCourse
-            ? {
-                code: bestVoucherCourse.tbl_vouchers?.code,
-                discountAmount: Number(bestVoucherCourse.discountAmount),
-                discountType: bestVoucherCourse.tbl_vouchers?.discountType,
-                finalPrice: Number(bestVoucherCourse.finalPrice),
-              }
-            : null,
-          enrollments: course.tbl_course_enrollments.map((enrollment) => ({
-            userId: enrollment.userId,
-            courseEnrollmentId: enrollment.courseEnrollmentId,
-            enrolledAt: enrollment.enrolledAt,
-            courseId: enrollment.courseId,
-            user: enrollment.tbl_users
-              ? {
-                  userId: enrollment.tbl_users.userId,
-                  fullName: enrollment.tbl_users.fullName,
-                  avatar: enrollment.tbl_users.avatar,
-                }
-              : null,
-          })),
-        };
-      });
+      return courses.map((course) => ({
+        courseId: course.courseId,
+        title: course.title,
+        description: course.description,
+        overview: course.overview,
+        durationTime: course.durationTime,
+        price: course.price ? Number(course.price) : 0,
+        approved: course.approved,
+        rating: course.rating ? Number(course.rating) : 0,
+        thumbnail: course.thumbnail,
+        createdAt: course.createdAt,
+        updatedAt: course.updatedAt,
+        categories: course.tbl_course_categories.map((category) => ({
+          categoryId: category.categoryId,
+          name: category.tbl_categories?.name,
+        })),
+        instructor: course.tbl_instructors
+          ? {
+            instructorId: course.tbl_instructors.instructorId,
+            name: course.tbl_instructors.tbl_users?.fullName,
+            avatar: course.tbl_instructors.tbl_users?.avatar,
+          }
+          : null,
+        reviewCount: course.tbl_course_reviews.length,
+      }));
     } catch (error) {
       console.error('Error fetching courses by instructor ID:', error);
       throw error;
@@ -781,20 +712,6 @@ export class CourseService {
             },
           },
           tbl_course_reviews: true,
-          tbl_voucher_courses: {
-            where: {
-              isActive: true,
-              tbl_vouchers: {
-                isActive: true,
-                startDate: { lte: new Date() },
-                endDate: { gte: new Date() },
-              },
-            },
-            include: {
-              tbl_vouchers: true,
-            },
-            orderBy: { discountAmount: 'desc' },
-          },
         },
       });
 
@@ -816,76 +733,8 @@ export class CourseService {
               tbl_categories: true,
             },
           },
-          tbl_voucher_courses: {
-            where: {
-              isActive: true,
-              tbl_vouchers: {
-                isActive: true,
-                startDate: { lte: new Date() },
-                endDate: { gte: new Date() },
-              },
-            },
-            include: {
-              tbl_vouchers: true,
-            },
-            orderBy: { discountAmount: 'desc' },
-          },
         },
       });
-
-      const newCourses = await this.prismaService.tbl_courses.findMany({
-        where: {
-          approved: COURSE_APPROVE_STATUS.APPROVED,
-          createdAt: {
-            gte: new Date(new Date().setDate(new Date().getDate() - 7)), // 7 days ago
-          },
-        },
-        include: {
-          tbl_instructors: {
-            include: {
-              tbl_users: true,
-            },
-          },
-          tbl_course_reviews: true,
-          tbl_course_categories: {
-            include: {
-              tbl_categories: true,
-            },
-          },
-          tbl_course_enrollments: true,
-          tbl_voucher_courses: {
-            where: {
-              isActive: true,
-              tbl_vouchers: {
-                isActive: true,
-                startDate: { lte: new Date() },
-                endDate: { gte: new Date() },
-              },
-            },
-            include: {
-              tbl_vouchers: true,
-            },
-            orderBy: { discountAmount: 'desc' },
-          },
-        },
-        orderBy: {
-          createdAt: 'desc', // Ưu tiên theo thời gian tạo
-        },
-        take: 10, // Lấy nhiều hơn để có thể lọc
-      });
-
-      const sortedNewCourses = newCourses
-        .sort((a, b) => {
-          // Tạo một "điểm" ưu tiên từ rating và số lượt mua
-          const scoreA =
-            (a.rating?.toNumber() || 0) * 0.7 +
-            (a.tbl_course_enrollments.length || 0) * 0.3;
-          const scoreB =
-            (b.rating?.toNumber() || 0) * 0.7 +
-            (b.tbl_course_enrollments.length || 0) * 0.3;
-          return scoreB - scoreA; // Sắp xếp giảm dần
-        })
-        .slice(0, 4);
 
       const popularTopics = await this.prismaService.tbl_categories.findMany({
         take: 8,
@@ -935,6 +784,46 @@ export class CourseService {
           average_rating: 'desc',
         },
       });
+
+      const newCourses = await this.prismaService.tbl_courses.findMany({
+        where: {
+          approved: COURSE_APPROVE_STATUS.APPROVED,
+          createdAt: {
+            gte: new Date(new Date().setDate(new Date().getDate() - 7)), // 7 days ago
+          },
+        },
+        include: {
+          tbl_instructors: {
+            include: {
+              tbl_users: true,
+            },
+          },
+          tbl_course_reviews: true,
+          tbl_course_categories: {
+            include: {
+              tbl_categories: true,
+            },
+          },
+          tbl_course_enrollments: true,
+        },
+        orderBy: {
+          createdAt: 'desc', // Ưu tiên theo thời gian tạo
+        },
+        take: 10, // Lấy nhiều hơn để có thể lọc
+      });
+
+      const sortedNewCourses = newCourses
+        .sort((a, b) => {
+          // Tạo một "điểm" ưu tiên từ rating và số lượt mua
+          const scoreA =
+            (a.rating ? Number(a.rating) : 0) * 0.7 +
+            (a.tbl_course_enrollments ? a.tbl_course_enrollments.length : 0) * 0.3;
+          const scoreB =
+            (b.rating ? Number(b.rating) : 0) * 0.7 +
+            (b.tbl_course_enrollments ? b.tbl_course_enrollments.length : 0) * 0.3;
+          return scoreB - scoreA; // Sắp xếp giảm dần
+        })
+        .slice(0, 4);
 
       const formattedMentors = popularMentors.map(
         (mentor) =>
@@ -993,20 +882,6 @@ export class CourseService {
               tbl_categories: true,
             },
           },
-          tbl_voucher_courses: {
-            where: {
-              isActive: true,
-              tbl_vouchers: {
-                isActive: true,
-                startDate: { lte: new Date() },
-                endDate: { gte: new Date() },
-              },
-            },
-            include: {
-              tbl_vouchers: true,
-            },
-            orderBy: { discountAmount: 'desc' },
-          },
         },
         orderBy: {
           createdAt: 'desc',
@@ -1033,6 +908,7 @@ export class CourseService {
     // Calculate average rating
     const reviews = course.tbl_course_reviews || [];
     const totalReviews = reviews.length;
+
     let averageRating = 0;
     if (course.rating) {
       if (typeof course.rating.toNumber === 'function') {
@@ -1047,13 +923,9 @@ export class CourseService {
       ? `${course.tbl_instructors.tbl_users?.firstName || ''} ${course.tbl_instructors.tbl_users?.lastName || ''}`.trim()
       : 'Unknown Instructor';
 
-    const bestVoucherCourse = course.tbl_voucher_courses?.[0];
-
-    // Calculate prices with voucher
-    const originalPrice = course.price?.toNumber() || 100000;
-    const currentPrice = bestVoucherCourse
-      ? Number(bestVoucherCourse.finalPrice)
-      : originalPrice;
+    // Calculate prices
+    const currentPrice = course.price?.toNumber() || 100000;
+    const originalPrice = Math.round(currentPrice * 1.2); // Example discount calculation
 
     // Get categories
     const categories =
@@ -1068,24 +940,10 @@ export class CourseService {
       instructor: instructor,
       rating: averageRating,
       reviews: totalReviews,
-      currentPrice: `${currentPrice.toLocaleString()}₫`,
-      originalPrice: bestVoucherCourse
-        ? `${originalPrice.toLocaleString()}₫`
-        : undefined,
-      hasDiscount: !!bestVoucherCourse,
-      discountPercentage: bestVoucherCourse
-        ? Math.round(((originalPrice - currentPrice) / originalPrice) * 100)
-        : undefined,
-      appliedVoucher: bestVoucherCourse
-        ? {
-            code: bestVoucherCourse.tbl_vouchers?.code,
-            discountAmount: Number(bestVoucherCourse.discountAmount),
-            discountType: bestVoucherCourse.tbl_vouchers?.discountType,
-          }
-        : undefined,
+      currentPrice: `₫${currentPrice.toLocaleString()}`,
+      originalPrice: `₫${originalPrice.toLocaleString()}`,
       isBestSeller: course.isBestSeller || false,
       image: course.thumbnail || '',
-      createdAt: course.createdAt || new Date(),
       updatedAt: course.updatedAt,
       updatedDate: formatDate(course.updatedAt),
       totalHours: Math.round(course.durationTime || 600) / 60 || 10,
