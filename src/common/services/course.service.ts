@@ -26,7 +26,7 @@ export class CourseService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly elasticsearchService: ElasticsearchService,
-  ) {}
+  ) { }
 
   createCourse(body: CreateCourseDto) {
     return this.prismaService.tbl_courses.create({
@@ -95,43 +95,43 @@ export class CourseService {
       })),
       instructor: course.tbl_instructors
         ? {
-            instructorId: course.tbl_instructors.instructorId,
-            userId: course.tbl_instructors.userId,
-            bio: course.tbl_instructors.bio,
-            profilePicture: course.tbl_instructors.profilePicture,
-            experience: course.tbl_instructors.experience,
-            averageRating: course.tbl_instructors.average_rating
-              ? Number(course.tbl_instructors.average_rating)
-              : 0,
-            isVerified: course.tbl_instructors.isVerified,
-            createdAt: course.tbl_instructors.createdAt,
-            updatedAt: course.tbl_instructors.updatedAt,
-            user: course.tbl_instructors.tbl_users
-              ? {
-                  userId: course.tbl_instructors.tbl_users.userId,
-                  email: course.tbl_instructors.tbl_users.email,
-                  fullName: course.tbl_instructors.tbl_users.fullName,
-                  avatar: course.tbl_instructors.tbl_users.avatar,
-                  role: course.tbl_instructors.tbl_users.role,
-                  createdAt: course.tbl_instructors.tbl_users.createdAt,
-                  updatedAt: course.tbl_instructors.tbl_users.updatedAt,
-                }
-              : null,
-          }
+          instructorId: course.tbl_instructors.instructorId,
+          userId: course.tbl_instructors.userId,
+          bio: course.tbl_instructors.bio,
+          profilePicture: course.tbl_instructors.profilePicture,
+          experience: course.tbl_instructors.experience,
+          averageRating: course.tbl_instructors.average_rating
+            ? Number(course.tbl_instructors.average_rating)
+            : 0,
+          isVerified: course.tbl_instructors.isVerified,
+          createdAt: course.tbl_instructors.createdAt,
+          updatedAt: course.tbl_instructors.updatedAt,
+          user: course.tbl_instructors.tbl_users
+            ? {
+              userId: course.tbl_instructors.tbl_users.userId,
+              email: course.tbl_instructors.tbl_users.email,
+              fullName: course.tbl_instructors.tbl_users.fullName,
+              avatar: course.tbl_instructors.tbl_users.avatar,
+              role: course.tbl_instructors.tbl_users.role,
+              createdAt: course.tbl_instructors.tbl_users.createdAt,
+              updatedAt: course.tbl_instructors.tbl_users.updatedAt,
+            }
+            : null,
+        }
         : null,
       reviews: course.tbl_course_reviews.map((review) => ({
         reviewId: review.reviewId,
         courseId: review.courseId,
         user: review.tbl_users
           ? {
-              userId: review.tbl_users.userId,
-              email: review.tbl_users.email,
-              fullName: review.tbl_users.fullName,
-              avatar: review.tbl_users.avatar,
-              role: review.tbl_users.role,
-              createdAt: review.tbl_users.createdAt,
-              updatedAt: review.tbl_users.updatedAt,
-            }
+            userId: review.tbl_users.userId,
+            email: review.tbl_users.email,
+            fullName: review.tbl_users.fullName,
+            avatar: review.tbl_users.avatar,
+            role: review.tbl_users.role,
+            createdAt: review.tbl_users.createdAt,
+            updatedAt: review.tbl_users.updatedAt,
+          }
           : null,
         rating: review.rating ? Number(review.rating) : 0,
         comment: review.comment,
@@ -251,8 +251,14 @@ export class CourseService {
           },
         },
         tbl_modules: {
+          orderBy: {
+            orderIndex: 'asc',
+          },
           include: {
             tbl_curricula: {
+              orderBy: {
+                orderIndex: 'asc',
+              },
               include: {
                 tbl_lectures: {
                   include: {
@@ -277,28 +283,10 @@ export class CourseService {
             tbl_users: true,
           },
         },
-        tbl_voucher_courses: {
-          where: {
-            isActive: true,
-            tbl_vouchers: {
-              isActive: true,
-              startDate: { lte: new Date() },
-              endDate: { gte: new Date() },
-            },
-          },
-          include: {
-            tbl_vouchers: true,
-          },
-          orderBy: { discountAmount: 'desc' },
-        },
       },
     });
 
     if (!course) return null;
-
-    // Lấy voucher tốt nhất (nếu có)
-    const bestVoucherCourse = course.tbl_voucher_courses[0];
-
     return {
       courseId: course.courseId,
       instructorId: course.instructorId,
@@ -307,12 +295,6 @@ export class CourseService {
       overview: course.overview,
       durationTime: course.durationTime,
       price: course.price ? Number(course.price) : 0,
-      // Thêm thông tin giá sau khi áp dụng voucher
-      currentPrice: bestVoucherCourse
-        ? Number(bestVoucherCourse.finalPrice)
-        : Number(course.price || 0),
-      originalPrice: Number(course.price || 0),
-      hasDiscount: !!bestVoucherCourse,
       approved: course.approved,
       rating: course.rating ? Number(course.rating) : 0,
       comment: course.comment,
@@ -329,14 +311,14 @@ export class CourseService {
         courseId: review.courseId,
         user: review.tbl_users
           ? {
-              userId: review.tbl_users.userId,
-              email: review.tbl_users.email,
-              fullName: review.tbl_users.fullName,
-              avatar: review.tbl_users.avatar,
-              role: review.tbl_users.role,
-              createdAt: review.tbl_users.createdAt,
-              updatedAt: review.tbl_users.updatedAt,
-            }
+            userId: review.tbl_users.userId,
+            email: review.tbl_users.email,
+            fullName: review.tbl_users.fullName,
+            avatar: review.tbl_users.avatar,
+            role: review.tbl_users.role,
+            createdAt: review.tbl_users.createdAt,
+            updatedAt: review.tbl_users.updatedAt,
+          }
           : null,
         rating: review.rating ? Number(review.rating) : 0,
         comment: review.comment,
@@ -345,29 +327,29 @@ export class CourseService {
       })),
       instructor: course.tbl_instructors
         ? {
-            instructorId: course.tbl_instructors.instructorId,
-            userId: course.tbl_instructors.userId,
-            bio: course.tbl_instructors.bio,
-            profilePicture: course.tbl_instructors.profilePicture,
-            experience: course.tbl_instructors.experience,
-            averageRating: course.tbl_instructors.average_rating
-              ? Number(course.tbl_instructors.average_rating)
-              : 0,
-            isVerified: course.tbl_instructors.isVerified,
-            createdAt: course.tbl_instructors.createdAt,
-            updatedAt: course.tbl_instructors.updatedAt,
-            user: course.tbl_instructors.tbl_users
-              ? {
-                  userId: course.tbl_instructors.tbl_users.userId,
-                  email: course.tbl_instructors.tbl_users.email,
-                  fullName: course.tbl_instructors.tbl_users.fullName,
-                  avatar: course.tbl_instructors.tbl_users.avatar,
-                  role: course.tbl_instructors.tbl_users.role,
-                  createdAt: course.tbl_instructors.tbl_users.createdAt,
-                  updatedAt: course.tbl_instructors.tbl_users.updatedAt,
-                }
-              : null,
-          }
+          instructorId: course.tbl_instructors.instructorId,
+          userId: course.tbl_instructors.userId,
+          bio: course.tbl_instructors.bio,
+          profilePicture: course.tbl_instructors.profilePicture,
+          experience: course.tbl_instructors.experience,
+          averageRating: course.tbl_instructors.average_rating
+            ? Number(course.tbl_instructors.average_rating)
+            : 0,
+          isVerified: course.tbl_instructors.isVerified,
+          createdAt: course.tbl_instructors.createdAt,
+          updatedAt: course.tbl_instructors.updatedAt,
+          user: course.tbl_instructors.tbl_users
+            ? {
+              userId: course.tbl_instructors.tbl_users.userId,
+              email: course.tbl_instructors.tbl_users.email,
+              fullName: course.tbl_instructors.tbl_users.fullName,
+              avatar: course.tbl_instructors.tbl_users.avatar,
+              role: course.tbl_instructors.tbl_users.role,
+              createdAt: course.tbl_instructors.tbl_users.createdAt,
+              updatedAt: course.tbl_instructors.tbl_users.updatedAt,
+            }
+            : null,
+        }
         : null,
       learningObjectives: course.tbl_course_learning_objectives.map(
         (objective) => ({
@@ -469,24 +451,6 @@ export class CourseService {
             }
           : null,
       })),
-      // Thêm thông tin voucher
-      appliedVoucher: bestVoucherCourse
-        ? {
-            code: bestVoucherCourse.tbl_vouchers?.code,
-            discountAmount: Number(bestVoucherCourse.discountAmount),
-            discountType: bestVoucherCourse.tbl_vouchers?.discountType,
-            finalPrice: Number(bestVoucherCourse.finalPrice),
-          }
-        : null,
-      availableVouchers: course.tbl_voucher_courses.map((voucherCourse) => ({
-        voucherCourseId: voucherCourse.voucherCourseId,
-        code: voucherCourse.tbl_vouchers?.code,
-        discountAmount: Number(voucherCourse.discountAmount),
-        discountType: voucherCourse.tbl_vouchers?.discountType,
-        finalPrice: Number(voucherCourse.finalPrice),
-        startDate: voucherCourse.tbl_vouchers?.startDate,
-        endDate: voucherCourse.tbl_vouchers?.endDate,
-      })),
     };
   }
 
@@ -545,11 +509,11 @@ export class CourseService {
       rating: course?.rating ? Number(Number(course.rating).toFixed(1)) : 0,
       tbl_instructors: course?.tbl_instructors
         ? {
-            ...course.tbl_instructors,
-            average_rating: course.tbl_instructors.average_rating
-              ? Number(Number(course.tbl_instructors.average_rating).toFixed(1))
-              : 0,
-          }
+          ...course.tbl_instructors,
+          average_rating: course.tbl_instructors.average_rating
+            ? Number(Number(course.tbl_instructors.average_rating).toFixed(1))
+            : 0,
+        }
         : null,
     }));
     return {
@@ -766,10 +730,10 @@ export class CourseService {
           })),
           instructor: course.tbl_instructors
             ? {
-                instructorId: course.tbl_instructors.instructorId,
-                name: course.tbl_instructors.tbl_users?.fullName,
-                avatar: course.tbl_instructors.tbl_users?.avatar,
-              }
+              instructorId: course.tbl_instructors.instructorId,
+              name: course.tbl_instructors.tbl_users?.fullName,
+              avatar: course.tbl_instructors.tbl_users?.avatar,
+            }
             : null,
           reviewCount: course.tbl_course_reviews.length,
           // Thêm thông tin voucher đã áp dụng
@@ -1176,16 +1140,16 @@ export class CourseService {
 
     const where: Prisma.tbl_coursesWhereInput = search
       ? {
-          OR: [
-            { title: { contains: search, mode: Prisma.QueryMode.insensitive } },
-            {
-              description: {
-                contains: search,
-                mode: Prisma.QueryMode.insensitive,
-              },
+        OR: [
+          { title: { contains: search, mode: Prisma.QueryMode.insensitive } },
+          {
+            description: {
+              contains: search,
+              mode: Prisma.QueryMode.insensitive,
             },
-          ],
-        }
+          },
+        ],
+      }
       : {};
 
     const [courses, total] = await Promise.all([
@@ -1233,17 +1197,17 @@ export class CourseService {
       updatedAt: course.updatedAt,
       user: course.tbl_instructors?.tbl_users
         ? {
-            userId: course.tbl_instructors.tbl_users.userId,
-            fullName: course.tbl_instructors.tbl_users.fullName,
-            avatar: course.tbl_instructors.tbl_users.avatar,
-          }
+          userId: course.tbl_instructors.tbl_users.userId,
+          fullName: course.tbl_instructors.tbl_users.fullName,
+          avatar: course.tbl_instructors.tbl_users.avatar,
+        }
         : null,
       category: course.tbl_course_categories[0]?.tbl_categories
         ? {
-            categoryId:
-              course.tbl_course_categories[0].tbl_categories.categoryId,
-            name: course.tbl_course_categories[0].tbl_categories.name,
-          }
+          categoryId:
+            course.tbl_course_categories[0].tbl_categories.categoryId,
+          name: course.tbl_course_categories[0].tbl_categories.name,
+        }
         : null,
     }));
 
@@ -1322,10 +1286,10 @@ export class CourseService {
               updatedAt: course.updatedAt,
               instructor: course.tbl_instructors
                 ? {
-                    instructorId: course.tbl_instructors.instructorId,
-                    name: course.tbl_instructors.tbl_users?.fullName,
-                    avatar: course.tbl_instructors.tbl_users?.avatar,
-                  }
+                  instructorId: course.tbl_instructors.instructorId,
+                  name: course.tbl_instructors.tbl_users?.fullName,
+                  avatar: course.tbl_instructors.tbl_users?.avatar,
+                }
                 : null,
               reviewCount: course.tbl_course_reviews.length,
             };

@@ -15,7 +15,7 @@ import { CreateLectureDto, UpdateLectureDto } from '../dto/lecture.dto';
 
 @Controller('lectures')
 export class LectureController {
-  constructor(private readonly lectureService: LectureService) {}
+  constructor(private readonly lectureService: LectureService) { }
 
   @Post()
   async createLecture(@Body() createLectureDto: CreateLectureDto) {
@@ -67,16 +67,25 @@ export class LectureController {
     @Body() updateLectureDto: UpdateLectureDto,
   ) {
     try {
+      // Kiểm tra và loại bỏ giá trị duration bất thường trước khi gửi đến service
+      if (updateLectureDto.duration !== undefined) {
+        // Nếu duration quá lớn (lớn hơn 1000 giây ~ 16 phút), coi là bất thường
+        if (updateLectureDto.duration > 1000) {
+          console.log(`LectureController: Phát hiện duration bất thường (${updateLectureDto.duration} giây), loại bỏ khỏi dữ liệu cập nhật`);
+          delete updateLectureDto.duration;
+        }
+      }
+
       const lecture = await this.lectureService.updateLecture(
         lectureId,
         updateLectureDto,
       );
-      
+
       // Nếu cập nhật title hoặc description, cập nhật lại curriculum
       if (updateLectureDto.title || updateLectureDto.description) {
         await this.lectureService.syncCurriculumWithLecture(lectureId);
       }
-      
+
       return {
         success: true,
         data: lecture,
