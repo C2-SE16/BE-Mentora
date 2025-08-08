@@ -1,0 +1,2 @@
+-- Không cần tạo lại bảng tbl_payment_temp vì đã tồn tại
+-- Nội dung này đã tồn tại trong migration 20250511095909_add_metadata_column/migration.sql 
